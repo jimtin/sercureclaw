@@ -1,0 +1,14 @@
+# Development overrides - use with: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+version: '3.8'
+
+services:
+  secureclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      - ENVIRONMENT=development
+    volumes:
+      - ./src:/app/src:ro
+      - ./data:/app/data
+    command: ["python", "-m", "watchfiles", "python -m secureclaw", "./src"]

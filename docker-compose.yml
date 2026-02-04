@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  secureclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: secureclaw-bot
+    restart: unless-stopped
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - ENVIRONMENT=production
+    volumes:
+      - ./data:/app/data
+    networks:
+      - secureclaw-net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: secureclaw-qdrant
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - secureclaw-net
+
+volumes:
+  qdrant_storage:
+
+networks:
+  secureclaw-net:
+    driver: bridge
