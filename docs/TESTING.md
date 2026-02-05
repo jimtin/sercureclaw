@@ -1,14 +1,31 @@
 # Testing Guide
 
-This document explains how to run tests for SecureClaw.
+Complete guide to SecureClaw's three-layer testing approach.
 
 ## Test Types
 
-SecureClaw has three types of tests:
+SecureClaw uses a **three-layer testing pyramid** for comprehensive coverage:
 
-1. **Unit Tests** - Fast, isolated tests of individual components
-2. **Integration Tests** - End-to-end tests that start the full Docker environment
-3. **Pre-commit Hooks** - Automated linting and type checking before commits
+1. **Unit Tests** - Fast, isolated tests with mocked dependencies (Discord bot, Agent, Router, Memory)
+2. **Integration Tests** - Full stack tests with Docker services (bypasses Discord API)
+3. **Discord E2E Tests** - True end-to-end tests using real Discord API
+4. **Pre-commit Hooks** - Automated linting and type checking before commits
+
+```
+              🔺
+           Discord E2E
+        (Real Discord API)
+      Slowest | Most Realistic
+    ╱                           ╲
+   ╱   Integration Tests          ╲
+  ╱ (Docker + Services + Agent)    ╲
+ ╱    Medium Speed | Component      ╲
+╱          Integration               ╲
+╲_______________________________________╱
+ ╲           Unit Tests               ╱
+  ╲   (Mocked, Fast Feedback)        ╱
+   ╲________________________________╱
+    Fastest | Most Isolated | Largest
 
 ---
 
@@ -113,6 +130,143 @@ pytest -m "not integration"
 # Skip via environment variable
 export SKIP_INTEGRATION_TESTS=true
 pytest
+```
+
+---
+
+## Discord E2E Tests
+
+**NEW**: True end-to-end tests that send real messages through Discord API.
+
+**Location**: `tests/integration/test_discord_e2e.py`
+**What**: Tests real Discord bot message handling with actual Discord API
+**Speed**: Fast (~1 minute once bot is running)
+**Marker**: `discord_e2e`
+
+### What's Different from Integration Tests?
+
+| Feature | Integration Tests | Discord E2E Tests |
+|---------|-------------------|-------------------|
+| Discord API | ❌ Mocked (MockDiscordBot) | ✅ Real Discord messages |
+| Agent Logic | ✅ Full stack tested | ✅ Full stack tested |
+| Services | ✅ Qdrant + Ollama | ✅ Qdrant + Ollama |
+| **Use Case** | Verify agent/router/memory | Verify Discord bot integration |
+
+### Setup Requirements
+
+#### 1. Create Test Bot in Discord Developer Portal
+
+1. Go to https://discord.com/developers/applications
+2. Click "New Application" → Name: "SecureClaw Test Bot"
+3. Navigate to "Bot" tab
+4. Click "Reset Token" → **Copy token** (you'll need this)
+5. Enable "Message Content Intent"
+6. Enable "Server Members Intent"
+7. Save changes
+
+#### 2. Create Test Discord Server & Channel
+
+1. Create a new Discord server (or use existing test server)
+2. Invite your test bot using this URL pattern:
+   ```
+   https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=274878285888&scope=bot%20applications.commands
+   ```
+   Replace `YOUR_CLIENT_ID` with your bot's Application ID
+3. Create a dedicated test channel (e.g., `#bot-testing`)
+4. Enable Developer Mode in Discord: Settings → Advanced → Developer Mode
+5. Right-click the test channel → "Copy Channel ID"
+
+#### 3. Configure Environment Variables
+
+Add to your `.env` file:
+
+```env
+# Discord E2E Testing (separate from main bot)
+TEST_DISCORD_BOT_TOKEN=your_test_bot_token_here
+TEST_DISCORD_CHANNEL_ID=1234567890123456789
+```
+
+**⚠️ Important**:
+- Use a **separate test bot**, not your production bot!
+- Never commit `TEST_DISCORD_BOT_TOKEN` to git
+- Test bot should only have access to test servers
+
+### Running Discord E2E Tests
+
+```bash
+# Easy way - use the provided script
+./scripts/run-discord-e2e-tests.sh
+
+# Manual way
+pytest tests/integration/test_discord_e2e.py -v -s -m discord_e2e
+
+# Skip Discord E2E tests (if not configured)
+pytest tests/ -m "not discord_e2e" -v
+```
+
+### What Discord E2E Tests Cover
+
+1. ✅ **Message Handling** - Bot receives and processes messages
+2. ✅ **Response Generation** - Bot sends responses back to Discord
+3. ✅ **Memory Operations** - Store and recall through Discord
+4. ✅ **Mentions** - Bot responds to @mentions
+5. ✅ **Slash Commands** - Commands registered and functional
+6. ✅ **Complex Queries** - Multi-turn conversations
+
+### Example Discord E2E Test
+
+```python
+@pytest.mark.discord_e2e
+@pytest.mark.asyncio
+async def test_bot_responds_to_message(discord_test_client):
+    """Test bot responds to a real Discord message."""
+    # Send actual message through Discord API
+    test_message = await discord_test_client.send_message(
+        "Hello SecureClaw, what is 2+2?"
+    )
+
+    # Wait for bot response (real Discord event)
+    response = await discord_test_client.wait_for_bot_response(
+        test_message, timeout=30.0
+    )
+
+    assert response is not None
+    assert len(response.content) > 0
+
+    # Cleanup test messages
+    await discord_test_client.delete_message(test_message)
+    await discord_test_client.delete_message(response)
+```
+
+### Troubleshooting Discord E2E Tests
+
+**Error**: `TEST_DISCORD_BOT_TOKEN not set`
+```bash
+# Add to .env
+echo "TEST_DISCORD_BOT_TOKEN=your_token" >> .env
+echo "TEST_DISCORD_CHANNEL_ID=123456789" >> .env
+```
+
+**Error**: Bot not responding
+```bash
+# Check bot is online in Discord
+# Check bot logs
+docker logs secureclaw-bot
+
+# Verify bot permissions in test channel:
+# - View Channels
+# - Send Messages
+# - Read Message History
+# - Use Application Commands
+```
+
+**Error**: Timeout waiting for response
+```bash
+# Possible causes:
+# 1. Bot not in test server - reinvite bot
+# 2. Bot lacks permissions - check channel permissions
+# 3. Rate limiting - wait 60 seconds between test runs
+# 4. Discord API issues - check https://discordstatus.com
 ```
 
 ---
@@ -250,9 +404,21 @@ pytest -m "not slow and not integration"
 
 ### Available Markers
 
-- `integration` - End-to-end tests with Docker
+- `integration` - Service integration tests with Docker (MockDiscordBot)
+- `discord_e2e` - True E2E tests with real Discord API
 - `slow` - Tests that take >5 seconds
 - Custom markers can be added in `pyproject.toml`
+
+```bash
+# Run only Discord E2E tests
+pytest -m discord_e2e
+
+# Run everything except Discord E2E
+pytest -m "not discord_e2e"
+
+# Run integration but not Discord E2E
+pytest -m "integration and not discord_e2e"
+```
 
 ---
 

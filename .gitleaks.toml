@@ -34,6 +34,7 @@ paths = [
     '''tests/.*\.py$''',
     # Ignore documentation with examples
     '''docs/implementation_plan\.md''',
+    '''docs/SECURITY\.md''',  # Contains example patterns for secret detection
 ]
 
 # Regexes to ignore (known false positives)

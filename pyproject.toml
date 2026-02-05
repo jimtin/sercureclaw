@@ -65,6 +65,7 @@ addopts = [
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "discord_e2e: marks tests as Discord end-to-end tests (deselect with '-m \"not discord_e2e\"')",
 ]
 
 [tool.coverage.run]
