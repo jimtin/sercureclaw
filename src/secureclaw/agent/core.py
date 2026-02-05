@@ -498,10 +498,11 @@ Respond with ONLY the fact/preference to remember, nothing else."""
                 "Could you be more specific?"
             )
 
+        context_text = "\n".join(context_parts)
         summary_prompt = f"""The user is asking: {query}
 
 Here's what I found in my memory:
-{"\n".join(context_parts)}
+{context_text}
 
 Summarize what I know about this in a helpful, conversational way."""
 
