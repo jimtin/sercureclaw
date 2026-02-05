@@ -14,7 +14,8 @@ param(
 $ErrorActionPreference = "Stop"
 
 # Colors for output
-function Write-ColorOutput($ForegroundColor) {
+function Write-ColorOutput {
+    param($ForegroundColor)
     $fc = $host.UI.RawUI.ForegroundColor
     $host.UI.RawUI.ForegroundColor = $ForegroundColor
     if ($args) {
