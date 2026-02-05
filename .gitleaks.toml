@@ -41,6 +41,8 @@ paths = [
     '''GITHUB_SECRETS\.md''',
     # Ignore GitHub workflows (contain test placeholder secrets)
     '''\.github/workflows/''',
+    # Ignore Windows deployment setup script (contains variable names for user input)
+    '''setup-windows-deployment\.ps1''',
 ]
 
 # Regexes to ignore (known false positives)

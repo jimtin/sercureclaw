@@ -1,0 +1,19 @@
+# CODEOWNERS - Defines code ownership for PR reviews
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owner - all files
+* @jimtin
+
+# Security-critical paths require explicit review
+/.github/                               @jimtin
+/.github/workflows/                     @jimtin
+/src/secureclaw/discord/security.py     @jimtin
+/.gitleaks.toml                         @jimtin
+/.pre-commit-config.yaml                @jimtin
+/Dockerfile                             @jimtin
+/Dockerfile.dev                         @jimtin
+/docker-compose.yml                     @jimtin
+/docker-compose.dev.yml                 @jimtin
+/SECURITY.md                            @jimtin
+/docs/SECURITY.md                       @jimtin
+/requirements.txt                       @jimtin

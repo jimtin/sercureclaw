@@ -7,6 +7,11 @@ services:
       dockerfile: Dockerfile
     container_name: secureclaw-bot
     restart: unless-stopped
+    # Security: read-only filesystem with writable tmpfs for temp files
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/appuser/.cache
     depends_on:
       qdrant:
         condition: service_healthy
@@ -21,9 +26,19 @@ services:
       - ./logs:/app/logs
     networks:
       - secureclaw-net
+    # Resource limits to prevent runaway processes
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   ollama:
-    image: ollama/ollama:latest
+    # Pin image by digest for reproducible builds (Dependabot auto-updates)
+    image: ollama/ollama:latest@sha256:37ef34d78a6f4563a11cbbb336bbaa75f01eb19671d639973f98baa58f11a5ed
     container_name: secureclaw-ollama
     restart: unless-stopped
     ports:
@@ -38,6 +53,15 @@ services:
       - ollama_models:/root/.ollama
     networks:
       - secureclaw-net
+    # Resource limits for LLM inference
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
     # Uncomment for GPU support (NVIDIA)
     # deploy:
     #   resources:
@@ -48,7 +72,8 @@ services:
     #           capabilities: [gpu]
 
   qdrant:
-    image: qdrant/qdrant:latest
+    # Pin image by digest for reproducible builds (Dependabot auto-updates)
+    image: qdrant/qdrant:latest@sha256:0425e3e03e7fd9b3dc95c4214546afe19de2eb2e28ca621441a56663ac6e1f46
     container_name: secureclaw-qdrant
     restart: unless-stopped
     ports:
@@ -63,6 +88,15 @@ services:
       - qdrant_storage:/qdrant/storage
     networks:
       - secureclaw-net
+    # Resource limits for vector database
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 volumes:
   qdrant_storage:
