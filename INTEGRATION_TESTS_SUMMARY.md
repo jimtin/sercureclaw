@@ -17,6 +17,12 @@
 - ✅ Logs uploaded on failure for debugging
 - ✅ Automatic cleanup of Docker resources
 
+**Enhanced Pre-Commit Hooks:**
+- ✅ **Gitleaks secret scanner** added - detects API keys, tokens, passwords, and credentials
+- ✅ Prevents accidental commit of Discord tokens, Gemini keys, Claude keys, OpenAI keys
+- ✅ Custom rules for SecureClaw-specific secrets
+- ✅ Allowlist for false positives (`.env.example`, test fixtures)
+
 **New Integration Test Job:**
 ```yaml
 integration:

@@ -60,6 +60,16 @@ repos:
       # Detect private keys
       - id: detect-private-key
 
+  # Gitleaks - Advanced secret scanning
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
+    hooks:
+      - id: gitleaks
+        name: Gitleaks secret scanner
+        entry: gitleaks detect --no-git --verbose --redact --config=.gitleaks.toml
+        language: golang
+        pass_filenames: false
+
   # Security: Check for common security issues
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.7

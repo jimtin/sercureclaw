@@ -65,3 +65,7 @@ htmlcov/
 .coverage.*
 coverage.xml
 docs/implementation_plan.md
+
+# Gitleaks
+gitleaks-report.json
+.gitleaks/

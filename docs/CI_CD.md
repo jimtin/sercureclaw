@@ -184,7 +184,13 @@ Defined in [`.pre-commit-config.yaml`](../.pre-commit-config.yaml):
    - Skips: Test files
    - Config: `pyproject.toml`
 
-5. **Hadolint (Dockerfile linting)**
+5. **Gitleaks Secret Scanner**
+   - Checks: API keys, tokens, passwords, private keys, credentials
+   - Detects: Discord tokens, Google/Gemini keys, Anthropic keys, OpenAI keys, AWS keys, GitHub tokens, JWT tokens, high-entropy strings
+   - Config: `.gitleaks.toml`
+   - Prevents: Accidental commit of secrets to repository
+
+6. **Hadolint (Dockerfile linting)**
    - Checks: Dockerfile best practices
    - Ignores: Apt-get pin warnings
 
@@ -212,8 +218,66 @@ pre-commit run
 # Run specific hook
 pre-commit run ruff --all-files
 
+# Run only Gitleaks secret scanner
+pre-commit run gitleaks --all-files
+
 # Update hooks to latest versions
 pre-commit autoupdate
+```
+
+### Secret Scanning with Gitleaks
+
+**What Gitleaks Detects:**
+- **API Keys**: Discord tokens, Google/Gemini keys, Anthropic (Claude) keys, OpenAI keys, AWS keys, GitHub tokens
+- **Private Keys**: RSA, SSH, PGP, OpenSSH private keys
+- **Credentials**: Passwords in URLs, JWT tokens, Slack tokens
+- **High-Entropy Strings**: Potential secrets based on randomness
+
+**Configuration:**
+- Rules defined in `.gitleaks.toml`
+- Custom rules for SecureClaw-specific secrets
+- Allowlist for false positives (e.g., `.env.example`, test fixtures)
+
+**What's Excluded:**
+- `.env.example` (template file with placeholders)
+- Test fixtures with `test_*` prefixes
+- Generated files (lock files, cache directories)
+- Logs and coverage reports
+
+**If Gitleaks Finds a Secret:**
+```bash
+# 1. DO NOT commit the file
+# 2. Remove the secret from the file
+vim .env  # Replace actual secret with placeholder
+
+# 3. If the secret was already committed (previous commits):
+# Option A: Use BFG Repo-Cleaner to remove from history
+git clone --mirror git@github.com:user/repo.git
+bfg --replace-text passwords.txt repo.git
+cd repo.git
+git reflog expire --expire=now --all && git gc --prune=now --aggressive
+git push
+
+# Option B: Interactive rebase (for recent commits)
+git rebase -i HEAD~5  # Edit last 5 commits
+# Mark commit as 'edit', remove secret, continue
+git rebase --continue
+
+# 4. Rotate the exposed secret immediately
+# - Discord: Generate new bot token
+# - API keys: Regenerate in provider dashboard
+```
+
+**Testing Gitleaks:**
+```bash
+# Scan all files
+pre-commit run gitleaks --all-files
+
+# Scan specific file
+gitleaks detect --no-git --source=src/secureclaw/config.py
+
+# Generate detailed report
+gitleaks detect --no-git --report-path=gitleaks-report.json
 ```
 
 ---

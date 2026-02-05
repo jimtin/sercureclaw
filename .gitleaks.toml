@@ -1,0 +1,184 @@
+# Gitleaks Configuration for SecureClaw
+# Detects passwords, API keys, tokens, and other secrets in commits
+# Documentation: https://github.com/gitleaks/gitleaks
+
+title = "SecureClaw Secret Detection"
+
+[extend]
+# Use default Gitleaks rules as base
+useDefault = true
+
+[allowlist]
+# Paths to ignore (these are safe to exclude from scanning)
+paths = [
+    '''\.git/''',
+    '''\.venv/''',
+    '''venv/''',
+    '''node_modules/''',
+    '''__pycache__/''',
+    '''\.pytest_cache/''',
+    '''\.mypy_cache/''',
+    '''\.ruff_cache/''',
+    '''htmlcov/''',
+    '''\.coverage''',
+    '''coverage\.xml''',
+    '''logs/''',
+    '''\.log$''',
+    # Ignore .env file (it's already gitignored, but skip scanning it anyway)
+    '''\.env$''',
+    # Ignore data directories (gitignored)
+    '''data/''',
+    '''qdrant_storage/''',
+    '''ollama_models/''',
+    # Ignore test files (contain fake tokens)
+    '''tests/.*\.py$''',
+    # Ignore documentation with examples
+    '''docs/implementation_plan\.md''',
+]
+
+# Regexes to ignore (known false positives)
+regexes = [
+    # Example/placeholder tokens in documentation
+    '''(your_token|your_key|your_secret|placeholder|example_key|your_.*_here)''',
+    # Test fixtures with fake tokens
+    '''test[-_](discord|gemini|anthropic|openai)[-_](token|key)''',
+    # Common variable names that trigger false positives
+    '''(DISCORD_TOKEN|GEMINI_API_KEY|ANTHROPIC_API_KEY|OPENAI_API_KEY)=\$\{''',
+    # Documentation with REDACTED placeholders
+    '''REDACTED''',
+    # Code with api_key= as parameter name (settings.*.get_secret_value())
+    '''api_key=settings\.(gemini|anthropic|openai)_api_key\.get_secret_value\(\)''',
+    # Code calling get_secret_value() method (not actual secrets)
+    '''\.get_secret_value\(\)''',
+    # Variable assignments to settings objects
+    '''=settings\.(discord_token|gemini_api_key|anthropic_api_key|openai_api_key)''',
+]
+
+# Stopwords - ignore commits containing these (e.g., "test" commits)
+stopwords = []
+
+# Custom rules for SecureClaw-specific secrets
+[[rules]]
+id = "discord-bot-token"
+description = "Discord Bot Token"
+regex = '''[MN][A-Za-z\d]{23}\.[\w-]{6}\.[\w-]{27}'''
+tags = ["discord", "token"]
+
+[[rules]]
+id = "discord-webhook"
+description = "Discord Webhook URL"
+regex = '''https://discord(app)?\.com/api/webhooks/\d+/[\w-]+'''
+tags = ["discord", "webhook"]
+
+[[rules]]
+id = "google-api-key"
+description = "Google API Key"
+regex = '''AIza[0-9A-Za-z\\-_]{35}'''
+tags = ["google", "api-key"]
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API Key"
+regex = '''sk-ant-api03-[A-Za-z0-9_-]{95,100}'''
+tags = ["anthropic", "api-key", "claude"]
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API Key"
+regex = '''sk-[a-zA-Z0-9]{48}'''
+tags = ["openai", "api-key"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(api[_-]?key|apikey|api[_-]?secret)[\s]*[:=][\s]*['"]?[A-Za-z0-9_\-]{20,}['"]?'''
+tags = ["api-key", "generic"]
+[rules.allowlist]
+regexes = [
+    # Ignore when it's just the variable name in .env.example
+    '''\.env\.example''',
+    # Ignore when it's a placeholder
+    '''(your_|example_|test_)''',
+]
+paths = [
+    '''README\.md''',
+    '''docs/.*\.md''',
+]
+
+[[rules]]
+id = "private-key-pem"
+description = "Private Key (PEM format)"
+regex = '''-----BEGIN (RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY( BLOCK)?-----'''
+tags = ["private-key", "pem"]
+
+[[rules]]
+id = "password-in-url"
+description = "Password in URL"
+regex = '''[a-zA-Z]{3,10}://[^/\s:@]{3,20}:[^/\s:@]{3,20}@.{1,100}'''
+tags = ["password", "url"]
+
+[[rules]]
+id = "env-file-secrets"
+description = "Secrets in .env files (not .env.example)"
+regex = '''(?i)(password|secret|token|api[_-]?key)[\s]*=[\s]*[^\s\n]{8,}'''
+paths = ['''^\.env$''']  # Only check .env, not .env.example
+tags = ["env", "password"]
+[rules.allowlist]
+regexes = [
+    # Code calling settings.*.get_secret_value() - not hardcoded secrets
+    '''settings\.(gemini_api_key|anthropic_api_key|openai_api_key|discord_token)\.get_secret_value\(\)''',
+    # Variable names ending in _REDACTED (documentation examples)
+    '''REDACTED''',
+]
+paths = [
+    '''README\.md''',
+    '''docs/''',
+    '''src/.*\.py$''',  # Allow source code (not actual secrets)
+]
+
+[[rules]]
+id = "jwt-token"
+description = "JSON Web Token"
+regex = '''eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'''
+tags = ["jwt", "token"]
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["aws", "access-key"]
+
+[[rules]]
+id = "github-token"
+description = "GitHub Personal Access Token"
+regex = '''ghp_[0-9a-zA-Z]{36}'''
+tags = ["github", "token"]
+
+[[rules]]
+id = "slack-token"
+description = "Slack Token"
+regex = '''xox[baprs]-([0-9a-zA-Z]{10,48})?'''
+tags = ["slack", "token"]
+
+[[rules]]
+id = "high-entropy-strings"
+description = "High Entropy String (potential secret)"
+regex = '''[a-zA-Z0-9_\-]{32,}'''
+entropy = 4.5
+tags = ["entropy", "potential-secret"]
+[rules.allowlist]
+regexes = [
+    # Ignore UUIDs and hashes that are not secrets
+    '''[0-9a-f]{32}''',  # MD5 hashes
+    '''[0-9a-f]{40}''',  # SHA1 hashes
+    '''[0-9a-f]{64}''',  # SHA256 hashes
+    # Ignore common non-secret long strings
+    '''(commit|version|hash|checksum|uuid|guid)''',
+]
+paths = [
+    '''\.lock$''',
+    '''requirements\.txt$''',
+    '''poetry\.lock$''',
+    '''README\.md''',
+    '''docs/.*\.md''',
+]
