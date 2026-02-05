@@ -160,21 +160,45 @@ pytest
 2. Click "New Application" → Name: "SecureClaw Test Bot"
 3. Navigate to "Bot" tab
 4. Click "Reset Token" → **Copy token** (you'll need this)
-5. Enable "Message Content Intent"
-6. Enable "Server Members Intent"
+5. **Enable Required Privileged Gateway Intents:**
+   - ✅ **Message Content Intent** - Allows bot to read message content
+   - ✅ **Server Members Intent** - Allows bot to see member information
+6. **Configure Bot Permissions:**
+   - ✅ **View Channels** - See channels in the server
+   - ✅ **Send Messages** - Send responses to users
+   - ✅ **Read Message History** - Read previous messages
+   - ✅ **Use Application Commands** - Enable slash commands
+   - ✅ **Mention Everyone, Here, and All Roles** - For @mentions in responses
 7. Save changes
 
 #### 2. Create Test Discord Server & Channel
 
 1. Create a new Discord server (or use existing test server)
-2. Invite your test bot using this URL pattern:
+2. **Generate Bot Invite URL** (choose one method):
+
+   **Method A - Manual URL:**
    ```
    https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=274878285888&scope=bot%20applications.commands
    ```
-   Replace `YOUR_CLIENT_ID` with your bot's Application ID
-3. Create a dedicated test channel (e.g., `#bot-testing`)
-4. Enable Developer Mode in Discord: Settings → Advanced → Developer Mode
-5. Right-click the test channel → "Copy Channel ID"
+   - Replace `YOUR_CLIENT_ID` with your bot's Application ID (from General Information tab)
+   - `permissions=274878285888` = View Channels + Send Messages + Read Message History + Use Application Commands + Mention Everyone
+
+   **Method B - Discord Developer Portal:**
+   - In Discord Developer Portal, go to "OAuth2" → "URL Generator"
+   - Select scopes: `bot` and `applications.commands`
+   - Select bot permissions:
+     - View Channels
+     - Send Messages
+     - Read Message History
+     - Use Application Commands
+     - Mention Everyone, Here, and All Roles
+   - Copy generated URL at bottom of page
+
+3. **Invite bot to test server** using the generated URL
+4. Create a dedicated test channel (e.g., `#bot-testing`)
+5. **Get Channel ID:**
+   - Enable Developer Mode in Discord: Settings → Advanced → Developer Mode
+   - Right-click the test channel → "Copy Channel ID"
 
 #### 3. Configure Environment Variables
 
@@ -252,13 +276,25 @@ echo "TEST_DISCORD_CHANNEL_ID=123456789" >> .env
 # Check bot is online in Discord
 # Check bot logs
 docker logs secureclaw-bot
-
-# Verify bot permissions in test channel:
-# - View Channels
-# - Send Messages
-# - Read Message History
-# - Use Application Commands
 ```
+
+**Verify bot has required permissions in test channel:**
+1. Right-click test channel → "Edit Channel" → "Permissions"
+2. Find your test bot in the permissions list
+3. Ensure these permissions are enabled (green checkmarks):
+   - ✅ View Channels
+   - ✅ Send Messages
+   - ✅ Read Message History
+   - ✅ Use Application Commands
+4. If permissions are missing, add them and try again
+
+**Verify bot intents are enabled:**
+1. Go to Discord Developer Portal → Your Application → Bot
+2. Scroll to "Privileged Gateway Intents"
+3. Ensure both are enabled:
+   - ✅ Message Content Intent
+   - ✅ Server Members Intent
+4. Save changes and restart bot if you made changes
 
 **Error**: Timeout waiting for response
 ```bash
@@ -268,6 +304,25 @@ docker logs secureclaw-bot
 # 3. Rate limiting - wait 60 seconds between test runs
 # 4. Discord API issues - check https://discordstatus.com
 ```
+
+### Required Permissions Summary
+
+**Privileged Gateway Intents** (Bot tab in Developer Portal):
+| Intent | Required | Purpose |
+|--------|----------|---------|
+| Message Content Intent | ✅ Yes | Read message content for processing |
+| Server Members Intent | ✅ Yes | Access member information |
+
+**Bot Permissions** (OAuth2 → URL Generator):
+| Permission | Required | Purpose |
+|-----------|----------|---------|
+| View Channels | ✅ Yes | See test channel |
+| Send Messages | ✅ Yes | Send responses |
+| Read Message History | ✅ Yes | Read previous messages for context |
+| Use Application Commands | ✅ Yes | Enable slash commands (/ask, /remember, etc.) |
+| Mention Everyone, Here, and All Roles | ⚠️ Optional | Allow @mentions in responses |
+
+**Permission Integer for OAuth URL**: `274878285888`
 
 ---
 
@@ -318,9 +373,47 @@ When you push to GitHub, the full CI pipeline runs:
 3. **Security Scan** (Bandit)
 4. **Unit Tests** (Python 3.12 & 3.13)
 5. **Docker Build** (Verify images build)
-6. **Integration Tests** (Optional - only if API keys in secrets)
+6. **Integration Tests** (MockDiscordBot + full agent stack)
+7. **Discord E2E Tests** (Real Discord API - only if secrets configured)
 
 See [.github/workflows/ci.yml](.github/workflows/ci.yml) for details.
+
+### GitHub Actions Secrets Setup
+
+To enable Discord E2E tests in CI, add these secrets to your GitHub repository:
+
+1. Go to your repository on GitHub
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret** and add:
+
+| Secret Name | Description | Example |
+|-------------|-------------|---------|
+| `DISCORD_TOKEN` | Main bot token (production) | `MTIzNDU2...` |
+| `GEMINI_API_KEY` | Google AI API key | `AIza...` |
+| `TEST_DISCORD_BOT_TOKEN` | Test bot token (separate bot) | `MTIzNDU2...` |
+| `TEST_DISCORD_CHANNEL_ID` | Test channel ID | `1234567890123456789` |
+| `ANTHROPIC_API_KEY` | Anthropic API key (optional) | `sk-ant-api03-...` |
+| `OPENAI_API_KEY` | OpenAI API key (optional) | `sk-...` |
+
+**Important:**
+- Use a **separate test bot** for `TEST_DISCORD_BOT_TOKEN`, not your production bot
+- Create a dedicated test server/channel for `TEST_DISCORD_CHANNEL_ID`
+- If `TEST_DISCORD_BOT_TOKEN` or `TEST_DISCORD_CHANNEL_ID` are not set, Discord E2E tests will be gracefully skipped
+- **Test bot must have same permissions as production bot:**
+  - Privileged Intents: Message Content + Server Members
+  - Bot Permissions: View Channels, Send Messages, Read Message History, Use Application Commands
+  - See [Required Permissions Summary](#required-permissions-summary) below for details
+
+### CI Pipeline Behavior
+
+**Discord E2E Tests:**
+- ✅ **Run**: If both `TEST_DISCORD_BOT_TOKEN` and `TEST_DISCORD_CHANNEL_ID` secrets are configured
+- ⏭️ **Skip**: If either secret is missing (graceful skip, CI still passes)
+- 🚫 **Fail**: If tests run but fail (e.g., bot doesn't respond, assertions fail)
+
+**Integration Tests:**
+- ✅ **Run**: Always (uses MockDiscordBot, doesn't require real Discord API)
+- ⏭️ **Skip**: Only if commit message contains `[skip integration]`
 
 ---
 
