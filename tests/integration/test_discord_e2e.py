@@ -8,12 +8,14 @@ Requires:
 """
 
 import asyncio
+import json
 import os
 from collections.abc import AsyncGenerator
 from contextlib import suppress
 from pathlib import Path
 
 import discord
+import httpx
 import pytest
 import pytest_asyncio
 
@@ -40,6 +42,53 @@ SKIP_REASON = (
     "Discord E2E tests require TEST_DISCORD_BOT_TOKEN and TEST_DISCORD_CHANNEL_ID "
     "environment variables. Set these in your .env to run Discord E2E tests."
 )
+
+
+async def validate_memory_recall(response: str, expected_info: str) -> tuple[bool, str]:
+    """Use Ollama to validate if a response indicates successful memory recall.
+
+    Args:
+        response: The bot's response to analyze.
+        expected_info: The information that should have been recalled
+            (e.g., "purple" for favorite color).
+
+    Returns:
+        Tuple of (success: bool, explanation: str).
+    """
+    validation_prompt = f"""Analyze this bot response and determine if it successfully \
+recalled the expected information.
+
+Bot response: "{response}"
+Expected information: "{expected_info}"
+
+Did the bot successfully recall and mention the expected information? Consider:
+- Direct mentions (e.g., "purple", "your favorite color is purple")
+- Indirect references that indicate knowledge of the info
+- Explicit statements of not knowing indicate FAILURE
+
+Respond with ONLY a JSON object:
+{{"success": true/false, "explanation": "brief reason"}}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            ollama_response = await client.post(
+                "http://localhost:11434/api/generate",
+                json={
+                    "model": "qwen2.5:7b",
+                    "prompt": validation_prompt,
+                    "stream": False,
+                    "format": "json",
+                    "options": {"temperature": 0.1, "num_predict": 100},
+                },
+            )
+            result = ollama_response.json()
+            result_text = result.get("response", "").strip()
+
+            validation = json.loads(result_text)
+            return validation.get("success", False), validation.get("explanation", "No explanation")
+    except Exception as e:
+        # Fallback: simple string matching
+        return expected_info.lower() in response.lower(), f"Fallback check (error: {e})"
 
 
 class DiscordTestClient:
@@ -305,9 +354,14 @@ async def test_bot_remembers_information(discord_test_client: DiscordTestClient)
         )
 
         assert recall_response is not None, "Bot did not respond to recall query"
-        # Note: Due to LLM variability, we just check it responded (not exact content)
-        assert len(recall_response.content) > 20, "Bot response too short"
-        print(f"✅ Memory test completed: {recall_response.content[:100]}...")
+
+        # Validate that the bot successfully recalled the information
+        success, explanation = await validate_memory_recall(recall_response.content, "purple")
+        print(f"Memory validation: {explanation}")
+        print(f"Bot response: {recall_response.content[:200]}...")
+
+        assert success, f"Bot failed to recall stored memory. Explanation: {explanation}"
+        print("✅ Memory test completed successfully")
 
     finally:
         await discord_test_client.delete_message(store_message)

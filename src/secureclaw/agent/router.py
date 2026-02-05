@@ -62,9 +62,9 @@ ROUTER_PROMPT = """You are a message router. Classify the user's message into on
 3. MEMORY_STORE - User explicitly wants you to remember something
    Examples: "Remember that I prefer dark mode", "My birthday is March 15", "Note that..."
 
-4. MEMORY_RECALL - User asking about past conversations or stored information
-   Examples: "What did we talk about yesterday?", "What do you know about me?", \
-"What are my preferences?"
+4. MEMORY_RECALL - User asking about previously stored personal information or past conversations
+   Examples: "What's my favorite color?", "What did we talk about yesterday?", \
+"What do you know about me?", "What's my birthday?", "What are my preferences?", "Where do I live?"
 
 5. SYSTEM_COMMAND - Bot commands, settings, help requests
    Examples: "Help", "What can you do?", "List commands", "Settings"
