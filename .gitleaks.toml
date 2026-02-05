@@ -39,6 +39,8 @@ paths = [
     '''wiki/''',
     # Ignore GitHub secrets configuration guide (contains example tokens/keys)
     '''GITHUB_SECRETS\.md''',
+    # Ignore GitHub workflows (contain test placeholder secrets)
+    '''\.github/workflows/''',
 ]
 
 # Regexes to ignore (known false positives)
@@ -134,11 +136,14 @@ regexes = [
     '''settings\.(gemini_api_key|anthropic_api_key|openai_api_key|discord_token)\.get_secret_value\(\)''',
     # Variable names ending in _REDACTED (documentation examples)
     '''REDACTED''',
+    # Test placeholders in CI workflows
+    '''test_(token|key)''',
 ]
 paths = [
     '''README\.md''',
     '''docs/''',
     '''src/.*\.py$''',  # Allow source code (not actual secrets)
+    '''\\.github/workflows/.*\\.yml$''',  # Allow test secrets in CI workflows
 ]
 
 [[rules]]

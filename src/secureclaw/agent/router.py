@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
 
-from google import genai
+from google import genai  # type: ignore[attr-defined]
 
 from secureclaw.config import get_settings
 from secureclaw.logging import get_logger

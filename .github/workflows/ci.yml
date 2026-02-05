@@ -147,6 +147,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Create minimal .env for Docker Compose test
+        run: |
+          cat > .env << EOF
+          DISCORD_TOKEN=test_token
+          GEMINI_API_KEY=test_key
+          QDRANT_HOST=qdrant
+          QDRANT_PORT=6333
+          LOG_LEVEL=INFO
+          EOF
+
       - name: Test Docker Compose
         run: |
           docker compose config

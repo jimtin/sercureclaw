@@ -2,7 +2,7 @@
 
 import asyncio
 
-from google import genai
+from google import genai  # type: ignore[attr-defined]
 
 from secureclaw.config import get_settings
 from secureclaw.logging import get_logger
