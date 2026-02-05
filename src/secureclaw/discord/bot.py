@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 
 from secureclaw.agent.core import Agent
+from secureclaw.config import get_settings
 from secureclaw.discord.security import (
     RateLimiter,
     UserAllowlist,
@@ -93,8 +94,8 @@ class SecureClawBot(discord.Client):
         if message.author == self.user:
             return
 
-        # Ignore messages from bots
-        if message.author.bot:
+        # Ignore messages from bots (unless explicitly allowed for testing)
+        if message.author.bot and not get_settings().allow_bot_messages:
             return
 
         # Only respond to DMs or mentions

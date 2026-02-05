@@ -208,12 +208,19 @@ Add to your `.env` file:
 # Discord E2E Testing (separate from main bot)
 TEST_DISCORD_BOT_TOKEN=your_test_bot_token_here
 TEST_DISCORD_CHANNEL_ID=1234567890123456789
+
+# Allow bot-to-bot messages (required for E2E tests)
+ALLOW_BOT_MESSAGES=true
 ```
 
 **⚠️ Important**:
 - Use a **separate test bot**, not your production bot!
 - Never commit `TEST_DISCORD_BOT_TOKEN` to git
 - Test bot should only have access to test servers
+- **`ALLOW_BOT_MESSAGES=true` is required** for Discord E2E tests to work
+  - By default, SecureClaw ignores messages from other bots (to prevent bot-to-bot spam)
+  - Setting this to `true` allows the test bot to send messages to your production bot
+  - **Keep this `false` in production** unless you specifically need bot-to-bot communication
 
 ### Running Discord E2E Tests
 

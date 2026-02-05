@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     )
     log_file_backup_count: int = Field(default=5, description="Number of rotated log files to keep")
 
+    # Testing Configuration
+    allow_bot_messages: bool = Field(
+        default=False, description="Allow messages from other bots (for E2E testing only)"
+    )
+
     @property
     def log_file_path(self) -> str:
         """Get the full log file path."""
