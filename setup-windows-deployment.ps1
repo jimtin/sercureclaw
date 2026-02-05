@@ -33,12 +33,12 @@ function Write-Success {
     Write-ColorOutput Green "✅ $message"
 }
 
-function Write-Warning {
+function Write-WarningMessage {
     param([string]$message)
     Write-ColorOutput Yellow "⚠️  $message"
 }
 
-function Write-Error {
+function Write-ErrorMessage {
     param([string]$message)
     Write-ColorOutput Red "❌ $message"
 }
@@ -67,7 +67,7 @@ Write-Output ""
 
 $confirmation = Read-Host "Continue with setup? (yes/no)"
 if ($confirmation -ne "yes") {
-    Write-Warning "Setup cancelled by user"
+    Write-WarningMessage "Setup cancelled by user"
     exit 0
 }
 
@@ -88,7 +88,7 @@ try {
     if ($LASTEXITCODE -eq 0) {
         Write-Success "Docker is running"
     } else {
-        Write-Warning "Docker is installed but not running. Starting Docker Desktop..."
+        Write-WarningMessage "Docker is installed but not running. Starting Docker Desktop..."
         Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
         Write-Output "Waiting 30 seconds for Docker to start..."
         Start-Sleep -Seconds 30
@@ -97,12 +97,12 @@ try {
         if ($LASTEXITCODE -eq 0) {
             Write-Success "Docker started successfully"
         } else {
-            Write-Error "Docker failed to start. Please start Docker Desktop manually and run this script again."
+            Write-ErrorMessage "Docker failed to start. Please start Docker Desktop manually and run this script again."
             exit 1
         }
     }
 } catch {
-    Write-Error "Docker is not installed. Please install Docker Desktop:"
+    Write-ErrorMessage "Docker is not installed. Please install Docker Desktop:"
     Write-Output "  Download from: https://www.docker.com/products/docker-desktop/"
     exit 1
 }
@@ -116,7 +116,7 @@ try {
         throw "Git not found"
     }
 } catch {
-    Write-Error "Git is not installed. Please install Git for Windows:"
+    Write-ErrorMessage "Git is not installed. Please install Git for Windows:"
     Write-Output "  Download from: https://git-scm.com/download/win"
     Write-Output "  Or run: winget install Git.Git"
     exit 1
@@ -131,12 +131,12 @@ try {
         throw "GitHub CLI not found"
     }
 } catch {
-    Write-Warning "GitHub CLI is not installed. Installing now..."
+    Write-WarningMessage "GitHub CLI is not installed. Installing now..."
     try {
         winget install GitHub.cli -e --accept-source-agreements --accept-package-agreements
         Write-Success "GitHub CLI installed"
     } catch {
-        Write-Error "Failed to install GitHub CLI. Please install manually:"
+        Write-ErrorMessage "Failed to install GitHub CLI. Please install manually:"
         Write-Output "  Run: winget install GitHub.cli"
         exit 1
     }
@@ -147,7 +147,7 @@ Write-Step "Step 2: Cloning repository..."
 
 # Create deployment directory
 if (Test-Path $DeploymentPath) {
-    Write-Warning "Deployment directory already exists: $DeploymentPath"
+    Write-WarningMessage "Deployment directory already exists: $DeploymentPath"
     $overwrite = Read-Host "Do you want to remove it and start fresh? (yes/no)"
     if ($overwrite -eq "yes") {
         Remove-Item -Recurse -Force $DeploymentPath
@@ -176,7 +176,7 @@ Write-Step "Step 3: Setting up environment configuration..."
 
 # Create .env file
 if (Test-Path ".env") {
-    Write-Warning ".env file already exists"
+    Write-WarningMessage ".env file already exists"
     $editEnv = Read-Host "Do you want to edit it? (yes/no)"
     if ($editEnv -eq "yes") {
         notepad .env
@@ -369,13 +369,13 @@ if (-not $SkipRunnerSetup) {
     $token = Read-Host "Paste the registration token here"
 
     if ([string]::IsNullOrWhiteSpace($token)) {
-        Write-Warning "No token provided. Skipping runner setup."
+        Write-WarningMessage "No token provided. Skipping runner setup."
         Write-Output "You can set up the runner manually later by running:"
         Write-Output "  powershell -File setup-runner.ps1"
     } else {
         # Create runner directory
         if (Test-Path $RunnerPath) {
-            Write-Warning "Runner directory already exists: $RunnerPath"
+            Write-WarningMessage "Runner directory already exists: $RunnerPath"
             $removeRunner = Read-Host "Remove and reinstall? (yes/no)"
             if ($removeRunner -eq "yes") {
                 Remove-Item -Recurse -Force $RunnerPath
@@ -427,11 +427,11 @@ if (-not $SkipRunnerSetup) {
             # Return to deployment directory
             Set-Location $DeploymentPath
         } else {
-            Write-Error "Failed to configure runner. Please set up manually."
+            Write-ErrorMessage "Failed to configure runner. Please set up manually."
         }
     }
 } else {
-    Write-Warning "Skipped runner setup (--SkipRunnerSetup flag)"
+    Write-WarningMessage "Skipped runner setup (--SkipRunnerSetup flag)"
 }
 
 Write-Output ""
@@ -540,7 +540,7 @@ if ($AutoStart) {
         Register-ScheduledTask -TaskName "SecureClaw-AutoStart" -Action $taskAction -Trigger $taskTrigger -Principal $taskPrincipal -Settings $taskSettings -Force | Out-Null
         Write-Success "Created auto-start scheduled task"
     } catch {
-        Write-Warning "Failed to create auto-start task: $_"
+        Write-WarningMessage "Failed to create auto-start task: $_"
     }
 }
 
