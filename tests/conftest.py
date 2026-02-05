@@ -1,8 +1,31 @@
 """Pytest fixtures for SecureClaw tests."""
 
+import os
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Set up test environment variables before any imports.
+
+    This fixture runs automatically before any tests and ensures that
+    Settings can be imported without validation errors.
+    """
+    # Set minimal required environment variables for Settings
+    os.environ.setdefault("DISCORD_TOKEN", "test-discord-token-placeholder")
+    os.environ.setdefault("GEMINI_API_KEY", "test-gemini-key-placeholder")
+
+    # Clear the settings cache to ensure tests start fresh
+    from secureclaw.config import get_settings
+
+    get_settings.cache_clear()
+
+    yield
+
+    # Cleanup after all tests
+    get_settings.cache_clear()
 
 
 @pytest.fixture
