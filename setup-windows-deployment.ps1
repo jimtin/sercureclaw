@@ -14,12 +14,12 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host @"
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║     SecureClaw Windows Deployment Setup                     ║
-║     Automated Installation & Configuration                   ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
+================================================================
+
+     SecureClaw Windows Deployment Setup
+     Automated Installation & Configuration
+
+================================================================
 "@ -ForegroundColor Cyan
 
 Write-Output ""
@@ -37,18 +37,18 @@ Write-Output ""
 
 $confirmation = Read-Host "Continue with setup? (yes/no)"
 if ($confirmation -ne "yes") {
-    Write-Host "⚠️  Setup cancelled by user" -ForegroundColor Yellow
+    Write-Host "[WARNING] Setup cancelled by user" -ForegroundColor Yellow
     exit 0
 }
 
 Write-Output ""
-Write-Host "🔧 Step 1: Checking prerequisites..." -ForegroundColor Cyan
+Write-Host "[STEP 1] Checking prerequisites..." -ForegroundColor Cyan
 
 # Check Docker
 try {
     $dockerVersion = docker --version 2>$null
     if ($dockerVersion) {
-        Write-Host "✅ Docker installed: $dockerVersion" -ForegroundColor Green
+        Write-Host "[OK] Docker installed: $dockerVersion" -ForegroundColor Green
     } else {
         throw "Docker not found"
     }
@@ -56,23 +56,23 @@ try {
     # Check if Docker is running
     docker info 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "✅ Docker is running" -ForegroundColor Green
+        Write-Host "[OK] Docker is running" -ForegroundColor Green
     } else {
-        Write-Host "⚠️  Docker is installed but not running. Starting Docker Desktop..." -ForegroundColor Yellow
+        Write-Host "[WARNING] Docker is installed but not running. Starting Docker Desktop..." -ForegroundColor Yellow
         Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
         Write-Output "Waiting 30 seconds for Docker to start..."
         Start-Sleep -Seconds 30
 
         docker info 2>$null | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Docker started successfully" -ForegroundColor Green
+            Write-Host "[OK] Docker started successfully" -ForegroundColor Green
         } else {
-            Write-Host "❌ Docker failed to start. Please start Docker Desktop manually and run this script again." -ForegroundColor Red
+            Write-Host "[ERROR] Docker failed to start. Please start Docker Desktop manually and run this script again." -ForegroundColor Red
             exit 1
         }
     }
 } catch {
-    Write-Host "❌ Docker is not installed. Please install Docker Desktop:" -ForegroundColor Red
+    Write-Host "[ERROR] Docker is not installed. Please install Docker Desktop:" -ForegroundColor Red
     Write-Output "  Download from: https://www.docker.com/products/docker-desktop/"
     exit 1
 }
@@ -81,12 +81,12 @@ try {
 try {
     $gitVersion = git --version 2>$null
     if ($gitVersion) {
-        Write-Host "✅ Git installed: $gitVersion" -ForegroundColor Green
+        Write-Host "[OK] Git installed: $gitVersion" -ForegroundColor Green
     } else {
         throw "Git not found"
     }
 } catch {
-    Write-Host "❌ Git is not installed. Please install Git for Windows:" -ForegroundColor Red
+    Write-Host "[ERROR] Git is not installed. Please install Git for Windows:" -ForegroundColor Red
     Write-Output "  Download from: https://git-scm.com/download/win"
     Write-Output "  Or run: winget install Git.Git"
     exit 1
@@ -96,32 +96,32 @@ try {
 try {
     $ghVersion = gh --version 2>$null
     if ($ghVersion) {
-        Write-Host "✅ GitHub CLI installed: $($ghVersion[0])" -ForegroundColor Green
+        Write-Host "[OK] GitHub CLI installed: $($ghVersion[0])" -ForegroundColor Green
     } else {
         throw "GitHub CLI not found"
     }
 } catch {
-    Write-Host "⚠️  GitHub CLI is not installed. Installing now..." -ForegroundColor Yellow
+    Write-Host "[WARNING] GitHub CLI is not installed. Installing now..." -ForegroundColor Yellow
     try {
         winget install GitHub.cli -e --accept-source-agreements --accept-package-agreements
-        Write-Host "✅ GitHub CLI installed" -ForegroundColor Green
+        Write-Host "[OK] GitHub CLI installed" -ForegroundColor Green
     } catch {
-        Write-Host "❌ Failed to install GitHub CLI. Please install manually:" -ForegroundColor Red
+        Write-Host "[ERROR] Failed to install GitHub CLI. Please install manually:" -ForegroundColor Red
         Write-Output "  Run: winget install GitHub.cli"
         exit 1
     }
 }
 
 Write-Output ""
-Write-Host "🔧 Step 2: Cloning repository..." -ForegroundColor Cyan
+Write-Host "[STEP 2] Cloning repository..." -ForegroundColor Cyan
 
 # Create deployment directory
 if (Test-Path $DeploymentPath) {
-    Write-Host "⚠️  Deployment directory already exists: $DeploymentPath" -ForegroundColor Yellow
+    Write-Host "[WARNING] Deployment directory already exists: $DeploymentPath" -ForegroundColor Yellow
     $overwrite = Read-Host "Do you want to remove it and start fresh? (yes/no)"
     if ($overwrite -eq "yes") {
         Remove-Item -Recurse -Force $DeploymentPath
-        Write-Host "✅ Removed existing directory" -ForegroundColor Green
+        Write-Host "[OK] Removed existing directory" -ForegroundColor Green
     } else {
         Write-Output "Using existing directory"
     }
@@ -136,14 +136,14 @@ if (-not (Test-Path ".git")) {
 } else {
     git pull origin main
 }
-Write-Host "✅ Repository ready" -ForegroundColor Green
+Write-Host "[OK] Repository ready" -ForegroundColor Green
 
 Write-Output ""
-Write-Host "🔧 Step 3: Setting up environment configuration..." -ForegroundColor Cyan
+Write-Host "[STEP 3] Setting up environment configuration..." -ForegroundColor Cyan
 
 # Create .env file
 if (Test-Path ".env") {
-    Write-Host "⚠️  .env file already exists" -ForegroundColor Yellow
+    Write-Host "[WARNING] .env file already exists" -ForegroundColor Yellow
     $editEnv = Read-Host "Do you want to edit it? (yes/no)"
     if ($editEnv -eq "yes") {
         notepad .env
@@ -151,7 +151,7 @@ if (Test-Path ".env") {
 } else {
     Write-Output "Creating .env file from template..."
     Copy-Item .env.example .env
-    Write-Host "✅ .env file created" -ForegroundColor Green
+    Write-Host "[OK] .env file created" -ForegroundColor Green
     Write-Output ""
     Write-Output "IMPORTANT: Edit the .env file with your credentials:"
     Write-Output "  - DISCORD_TOKEN (required)"
@@ -166,7 +166,7 @@ if (Test-Path ".env") {
 }
 
 Write-Output ""
-Write-Host "🔧 Step 4: Creating deployment scripts..." -ForegroundColor Cyan
+Write-Host "[STEP 4] Creating deployment scripts..." -ForegroundColor Cyan
 
 # Create deploy-windows.ps1
 $deployScript = @'
@@ -176,8 +176,8 @@ param(
     [switch]$NoBuild = $false
 )
 
-Write-Host "🚀 SecureClaw Deployment" -ForegroundColor Cyan
-Write-Host "========================" -ForegroundColor Cyan
+Write-Host "[DEPLOY] SecureClaw Deployment" -ForegroundColor Cyan
+Write-Host "==============================" -ForegroundColor Cyan
 
 # Check if Docker is running
 try {
@@ -186,43 +186,43 @@ try {
         throw "Docker not running"
     }
 } catch {
-    Write-Host "❌ Docker is not running. Please start Docker Desktop." -ForegroundColor Red
+    Write-Host "[ERROR] Docker is not running. Please start Docker Desktop." -ForegroundColor Red
     exit 1
 }
 
 # Pull latest code
-Write-Host "📥 Pulling latest code..." -ForegroundColor Cyan
+Write-Host "[INFO] Pulling latest code..." -ForegroundColor Cyan
 git pull origin main
 
 # Backup .env if not skipped
 if (-not $SkipBackup) {
-    Write-Host "💾 Backing up .env..." -ForegroundColor Cyan
+    Write-Host "[INFO] Backing up .env..." -ForegroundColor Cyan
     Copy-Item .env ".env.backup.$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 }
 
 # Stop existing containers
-Write-Host "🛑 Stopping existing containers..." -ForegroundColor Cyan
+Write-Host "[INFO] Stopping existing containers..." -ForegroundColor Cyan
 docker-compose down --timeout 30
 
 # Build new image if not skipped
 if (-not $NoBuild) {
-    Write-Host "🔨 Building new image..." -ForegroundColor Cyan
+    Write-Host "[INFO] Building new image..." -ForegroundColor Cyan
     docker-compose build
 }
 
 # Start new containers
-Write-Host "🚀 Starting containers..." -ForegroundColor Cyan
+Write-Host "[INFO] Starting containers..." -ForegroundColor Cyan
 docker-compose up -d
 
 # Wait for containers to be healthy
-Write-Host "⏳ Waiting for containers to be healthy..." -ForegroundColor Cyan
+Write-Host "[INFO] Waiting for containers to be healthy..." -ForegroundColor Cyan
 Start-Sleep -Seconds 10
 
 # Show status
-Write-Host "📊 Container status:" -ForegroundColor Cyan
+Write-Host "[INFO] Container status:" -ForegroundColor Cyan
 docker-compose ps
 
-Write-Host "✅ Deployment complete!" -ForegroundColor Green
+Write-Host "[OK] Deployment complete!" -ForegroundColor Green
 Write-Host "View logs with: .\logs.ps1" -ForegroundColor Cyan
 '@
 
@@ -232,7 +232,7 @@ Set-Content -Path "deploy-windows.ps1" -Value $deployScript
 $startScript = @'
 # start.ps1 - Start SecureClaw containers
 docker-compose up -d
-Write-Host "✅ Containers started" -ForegroundColor Green
+Write-Host "[OK] Containers started" -ForegroundColor Green
 docker-compose ps
 '@
 
@@ -242,7 +242,7 @@ Set-Content -Path "start.ps1" -Value $startScript
 $stopScript = @'
 # stop.ps1 - Stop SecureClaw containers
 docker-compose down --timeout 30
-Write-Host "✅ Containers stopped" -ForegroundColor Green
+Write-Host "[OK] Containers stopped" -ForegroundColor Green
 '@
 
 Set-Content -Path "stop.ps1" -Value $stopScript
@@ -262,7 +262,7 @@ param(
     [int]$IntervalSeconds = 60
 )
 
-Write-Host "🔄 Auto-deploy monitor started (checking every $IntervalSeconds seconds)" -ForegroundColor Cyan
+Write-Host "[AUTO-DEPLOY] Monitor started (checking every $IntervalSeconds seconds)" -ForegroundColor Cyan
 Write-Host "Press Ctrl+C to stop" -ForegroundColor Yellow
 
 $lastCommit = git rev-parse HEAD
@@ -274,7 +274,7 @@ while ($true) {
     $currentCommit = git rev-parse origin/main
 
     if ($lastCommit -ne $currentCommit) {
-        Write-Host "📢 New changes detected! Deploying..." -ForegroundColor Green
+        Write-Host "[INFO] New changes detected! Deploying..." -ForegroundColor Green
         .\deploy-windows.ps1
         $lastCommit = $currentCommit
     }
@@ -283,14 +283,15 @@ while ($true) {
 
 Set-Content -Path "auto-deploy.ps1" -Value $autoDeployScript
 
-Write-Host "✅ Deployment scripts created" -ForegroundColor Green
+Write-Host "[OK] Deployment scripts created" -ForegroundColor Green
 
 if (-not $SkipRunnerSetup) {
     Write-Output ""
-    Write-Host "🔧 Step 5: Setting up GitHub Actions runner..." -ForegroundColor Cyan
+    Write-Host "[STEP 5] Setting up GitHub Actions runner..." -ForegroundColor Cyan
 
     Write-Output "Opening GitHub runner registration page..."
-    Start-Process "https://github.com/jimtin/sercureclaw/settings/actions/runners/new?arch=x64&os=win"
+    # Use single quotes to prevent ampersand interpretation
+    Start-Process 'https://github.com/jimtin/sercureclaw/settings/actions/runners/new?arch=x64&os=win'
 
     Write-Output ""
     Write-Output "1. Wait for the GitHub page to open in your browser"
@@ -302,13 +303,13 @@ if (-not $SkipRunnerSetup) {
     $token = Read-Host "Paste the registration token here"
 
     if ([string]::IsNullOrWhiteSpace($token)) {
-        Write-Host "⚠️  No token provided. Skipping runner setup." -ForegroundColor Yellow
+        Write-Host "[WARNING] No token provided. Skipping runner setup." -ForegroundColor Yellow
         Write-Output "You can set up the runner manually later by running:"
         Write-Output "  powershell -File setup-runner.ps1"
     } else {
         # Create runner directory
         if (Test-Path $RunnerPath) {
-            Write-Host "⚠️  Runner directory already exists: $RunnerPath" -ForegroundColor Yellow
+            Write-Host "[WARNING] Runner directory already exists: $RunnerPath" -ForegroundColor Yellow
             $removeRunner = Read-Host "Remove and reinstall? (yes/no)"
             if ($removeRunner -eq "yes") {
                 Remove-Item -Recurse -Force $RunnerPath
@@ -346,20 +347,20 @@ if (-not $SkipRunnerSetup) {
             Write-Output "Starting runner service..."
             .\svc.sh start
 
-            Write-Host "✅ Runner service started" -ForegroundColor Green
+            Write-Host "[OK] Runner service started" -ForegroundColor Green
 
             # Return to deployment directory
             Set-Location $DeploymentPath
         } else {
-            Write-Host "❌ Failed to configure runner. Please set up manually." -ForegroundColor Red
+            Write-Host "[ERROR] Failed to configure runner. Please set up manually." -ForegroundColor Red
         }
     }
 } else {
-    Write-Host "⚠️  Skipped runner setup (--SkipRunnerSetup flag)" -ForegroundColor Yellow
+    Write-Host "[WARNING] Skipped runner setup (SkipRunnerSetup flag specified)" -ForegroundColor Yellow
 }
 
 Write-Output ""
-Write-Host "🔧 Step 6: Creating deployment workflow..." -ForegroundColor Cyan
+Write-Host "[STEP 6] Creating deployment workflow..." -ForegroundColor Cyan
 
 # Create .github/workflows directory if it doesn't exist
 $workflowDir = ".github\workflows"
@@ -401,12 +402,12 @@ jobs:
 
 Set-Content -Path "$workflowDir\deploy-windows.yml" -Value $deployWorkflow
 
-Write-Host "✅ Deployment workflow created" -ForegroundColor Green
+Write-Host "[OK] Deployment workflow created" -ForegroundColor Green
 
 # Create auto-start task if requested
 if ($AutoStart) {
     Write-Output ""
-    Write-Host "🔧 Creating auto-start scheduled task..." -ForegroundColor Cyan
+    Write-Host "[INFO] Creating auto-start scheduled task..." -ForegroundColor Cyan
 
     $taskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-File `"$DeploymentPath\start.ps1`""
     $taskTrigger = New-ScheduledTaskTrigger -AtStartup
@@ -415,44 +416,44 @@ if ($AutoStart) {
 
     try {
         Register-ScheduledTask -TaskName "SecureClaw-AutoStart" -Action $taskAction -Trigger $taskTrigger -Principal $taskPrincipal -Settings $taskSettings -Force | Out-Null
-        Write-Host "✅ Created auto-start scheduled task" -ForegroundColor Green
+        Write-Host "[OK] Created auto-start scheduled task" -ForegroundColor Green
     } catch {
-        Write-Host "⚠️  Failed to create auto-start task: $_" -ForegroundColor Yellow
+        Write-Host "[WARNING] Failed to create auto-start task: $_" -ForegroundColor Yellow
     }
 }
 
 Write-Output ""
 Write-Host @"
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║                  ✅ SETUP COMPLETE!                          ║
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
+================================================================
+
+                  SETUP COMPLETE!
+
+================================================================
 "@ -ForegroundColor Green
 
 Write-Output ""
-Write-Output "📁 Deployment directory: $DeploymentPath"
+Write-Output "Deployment directory: $DeploymentPath"
 if (-not $SkipRunnerSetup) {
-    Write-Output "🏃 Runner directory: $RunnerPath"
+    Write-Output "Runner directory: $RunnerPath"
 }
 Write-Output ""
-Write-Output "🚀 Quick Commands:"
+Write-Output "Quick Commands:"
 Write-Output "  Deploy now:           .\deploy-windows.ps1"
 Write-Output "  Start bot:            .\start.ps1"
 Write-Output "  Stop bot:             .\stop.ps1"
 Write-Output "  View logs:            .\logs.ps1"
 Write-Output "  Auto-deploy monitor:  .\auto-deploy.ps1"
 Write-Output ""
-Write-Output "📋 Next Steps:"
+Write-Output "Next Steps:"
 Write-Output "  1. Test deployment:   .\deploy-windows.ps1"
 Write-Output "  2. Verify bot works:  .\logs.ps1"
 Write-Output "  3. Commit workflow:   git add .github/workflows/deploy-windows.yml"
 Write-Output "                        git commit -m 'feat: add Windows deployment workflow'"
 Write-Output "                        git push origin main"
 Write-Output ""
-Write-Output "🔄 Automatic Deployment:"
+Write-Output "Automatic Deployment:"
 Write-Output "  - Triggers when CI passes on main branch"
 Write-Output "  - Runner service runs in background"
 Write-Output "  - Check status: Set-Location $RunnerPath; .\svc.sh status"
 Write-Output ""
-Write-Host "✅ Setup complete! Your Windows deployment is ready." -ForegroundColor Green
+Write-Host "[OK] Setup complete! Your Windows deployment is ready." -ForegroundColor Green
