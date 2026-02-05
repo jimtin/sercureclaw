@@ -158,8 +158,7 @@ jobs:
           pip-licenses --format=markdown >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           pip-licenses \
-            --allow-only="MIT License;MIT;BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;ISC License;ISC;Python Software Foundation License;PSF-2.0;Mozilla Public License 2.0 (MPL 2.0);Artistic License;Public Domain;The Unlicense;UNKNOWN" \
-            --fail-on-violation
+            --allow-only="MIT License;MIT;BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;ISC License;ISC;Python Software Foundation License;PSF-2.0;Mozilla Public License 2.0 (MPL 2.0);Artistic License;Public Domain;The Unlicense;UNKNOWN"
 
   pre-commit:
     name: Pre-commit Checks
