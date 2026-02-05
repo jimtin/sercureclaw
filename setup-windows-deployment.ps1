@@ -23,19 +23,23 @@ function Write-ColorOutput($ForegroundColor) {
     $host.UI.RawUI.ForegroundColor = $fc
 }
 
-function Write-Step($message) {
+function Write-Step {
+    param([string]$message)
     Write-ColorOutput Cyan "🔧 $message"
 }
 
-function Write-Success($message) {
+function Write-Success {
+    param([string]$message)
     Write-ColorOutput Green "✅ $message"
 }
 
-function Write-Warning($message) {
+function Write-Warning {
+    param([string]$message)
     Write-ColorOutput Yellow "⚠️  $message"
 }
 
-function Write-Error($message) {
+function Write-Error {
+    param([string]$message)
     Write-ColorOutput Red "❌ $message"
 }
 
