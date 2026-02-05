@@ -30,10 +30,13 @@ def mock_agent():
 def bot(mock_memory):
     """Create a bot instance with mocked memory."""
     bot = SecureClawBot(memory=mock_memory)
-    # Mock the bot user
-    bot.user = MagicMock(spec=discord.ClientUser)
-    bot.user.id = 999999999
-    bot.user.name = "SecureClawBot"
+    # Mock the bot user via _connection.user (the underlying attribute)
+    mock_user = MagicMock(spec=discord.ClientUser)
+    mock_user.id = 999999999
+    mock_user.name = "SecureClawBot"
+    bot._connection.user = mock_user
+    # Mock the command tree sync method
+    bot._tree.sync = AsyncMock()
     return bot
 
 
@@ -46,9 +49,11 @@ def mock_message():
     message.author.bot = False
     message.channel = MagicMock(spec=discord.TextChannel)
     message.channel.id = 987654321
-    message.channel.typing = AsyncMock()
-    message.channel.typing.return_value.__aenter__ = AsyncMock()
-    message.channel.typing.return_value.__aexit__ = AsyncMock()
+    # Mock typing() as an async context manager
+    typing_cm = MagicMock()
+    typing_cm.__aenter__ = AsyncMock()
+    typing_cm.__aexit__ = AsyncMock()
+    message.channel.typing = MagicMock(return_value=typing_cm)
     message.reply = AsyncMock()
     message.mentions = []
     message.content = "Test message"
@@ -60,9 +65,11 @@ def mock_dm_message(mock_message):
     """Create a mock DM message."""
     mock_message.channel = MagicMock(spec=discord.DMChannel)
     mock_message.channel.id = 987654321
-    mock_message.channel.typing = AsyncMock()
-    mock_message.channel.typing.return_value.__aenter__ = AsyncMock()
-    mock_message.channel.typing.return_value.__aexit__ = AsyncMock()
+    # Mock typing() as an async context manager
+    typing_cm = MagicMock()
+    typing_cm.__aenter__ = AsyncMock()
+    typing_cm.__aexit__ = AsyncMock()
+    mock_message.channel.typing = MagicMock(return_value=typing_cm)
     return mock_message
 
 
@@ -278,7 +285,7 @@ class TestSlashCommands:
     async def test_search_command_success(self, bot, mock_interaction, mock_memory):
         """Test /search command succeeds."""
         mock_memory.search_memories.return_value = [
-            {"content": "Test memory", "timestamp": "2024-01-01"}
+            {"content": "Test memory", "timestamp": "2024-01-01", "score": 0.95}
         ]
 
         with patch.object(bot._allowlist, "is_allowed", return_value=True):
@@ -298,3 +305,218 @@ class TestSlashCommands:
 
         mock_interaction.followup.send.assert_called_once()
         assert "No matching memories" in mock_interaction.followup.send.call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_remember_command_agent_not_ready(self, bot, mock_interaction):
+        """Test /remember command when agent is not ready."""
+        bot._agent = None
+
+        with patch.object(bot._allowlist, "is_allowed", return_value=True):
+            await bot._handle_remember(mock_interaction, "Remember this")
+
+        mock_interaction.followup.send.assert_called_once()
+        assert "starting up" in mock_interaction.followup.send.call_args[0][0].lower()
+
+
+class TestChannelsCommand:
+    """Test /channels command handler."""
+
+    @pytest.mark.asyncio
+    async def test_channels_command_unauthorized(self, bot, mock_interaction):
+        """Test /channels command blocks unauthorized users."""
+        with patch.object(bot._allowlist, "is_allowed", return_value=False):
+            await bot._handle_channels(mock_interaction)
+
+        mock_interaction.response.send_message.assert_called_once()
+        assert "not authorized" in mock_interaction.response.send_message.call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_channels_command_in_dm(self, bot, mock_interaction):
+        """Test /channels command in DM (not in a guild)."""
+        mock_interaction.guild = None
+
+        with patch.object(bot._allowlist, "is_allowed", return_value=True):
+            await bot._handle_channels(mock_interaction)
+
+        mock_interaction.response.defer.assert_called_once()
+        mock_interaction.followup.send.assert_called_once()
+        assert "only works in servers" in mock_interaction.followup.send.call_args[0][0]
+
+    @pytest.mark.asyncio
+    async def test_channels_command_with_text_channels(self, bot, mock_interaction):
+        """Test /channels command lists text channels."""
+        # Create mock guild with text channels
+        mock_guild = MagicMock(spec=discord.Guild)
+        mock_guild.name = "Test Server"
+        mock_interaction.guild = mock_guild
+
+        # Mock text channel
+        mock_text_channel = MagicMock(spec=discord.TextChannel)
+        mock_text_channel.name = "general"
+
+        # Mock permissions
+        mock_permissions = MagicMock()
+        mock_permissions.view_channel = True
+        mock_permissions.send_messages = True
+        mock_permissions.read_message_history = True
+        mock_text_channel.permissions_for.return_value = mock_permissions
+
+        mock_guild.channels = [mock_text_channel]
+        mock_guild.me = MagicMock()
+
+        with patch.object(bot._allowlist, "is_allowed", return_value=True):
+            await bot._handle_channels(mock_interaction)
+
+        mock_interaction.response.defer.assert_called_once()
+        mock_interaction.followup.send.assert_called_once()
+
+        response = mock_interaction.followup.send.call_args[0][0]
+        assert "Test Server" in response
+        assert "general" in response
+        assert "Text Channels" in response
+
+    @pytest.mark.asyncio
+    async def test_channels_command_with_voice_channels(self, bot, mock_interaction):
+        """Test /channels command lists voice channels."""
+        mock_guild = MagicMock(spec=discord.Guild)
+        mock_guild.name = "Test Server"
+        mock_interaction.guild = mock_guild
+
+        # Mock voice channel
+        mock_voice_channel = MagicMock(spec=discord.VoiceChannel)
+        mock_voice_channel.name = "Voice Chat"
+
+        mock_permissions = MagicMock()
+        mock_permissions.view_channel = True
+        mock_permissions.connect = True
+        mock_voice_channel.permissions_for.return_value = mock_permissions
+
+        mock_guild.channels = [mock_voice_channel]
+        mock_guild.me = MagicMock()
+
+        with patch.object(bot._allowlist, "is_allowed", return_value=True):
+            await bot._handle_channels(mock_interaction)
+
+        response = mock_interaction.followup.send.call_args[0][0]
+        assert "Voice Channels" in response
+        assert "Voice Chat" in response
+
+    @pytest.mark.asyncio
+    async def test_channels_command_with_categories(self, bot, mock_interaction):
+        """Test /channels command lists categories."""
+        mock_guild = MagicMock(spec=discord.Guild)
+        mock_guild.name = "Test Server"
+        mock_interaction.guild = mock_guild
+
+        # Mock category channel
+        mock_category = MagicMock(spec=discord.CategoryChannel)
+        mock_category.name = "General Category"
+
+        mock_permissions = MagicMock()
+        mock_permissions.view_channel = True
+        mock_category.permissions_for.return_value = mock_permissions
+
+        mock_guild.channels = [mock_category]
+        mock_guild.me = MagicMock()
+
+        with patch.object(bot._allowlist, "is_allowed", return_value=True):
+            await bot._handle_channels(mock_interaction)
+
+        response = mock_interaction.followup.send.call_args[0][0]
+        assert "Categories" in response
+        assert "General Category" in response
+
+    @pytest.mark.asyncio
+    async def test_channels_command_long_response(self, bot, mock_interaction):
+        """Test /channels command splits long responses."""
+        mock_guild = MagicMock(spec=discord.Guild)
+        mock_guild.name = "Test Server"
+        mock_interaction.guild = mock_guild
+
+        # Create many text channels to exceed 2000 char limit
+        channels = []
+        for i in range(50):
+            mock_channel = MagicMock(spec=discord.TextChannel)
+            mock_channel.name = f"channel-with-a-very-long-name-{i:03d}"
+
+            mock_permissions = MagicMock()
+            mock_permissions.view_channel = True
+            mock_permissions.send_messages = True
+            mock_permissions.read_message_history = True
+            mock_channel.permissions_for.return_value = mock_permissions
+
+            channels.append(mock_channel)
+
+        mock_guild.channels = channels
+        mock_guild.me = MagicMock()
+
+        with patch.object(bot._allowlist, "is_allowed", return_value=True):
+            await bot._handle_channels(mock_interaction)
+
+        # Should be called multiple times for long response
+        assert mock_interaction.followup.send.call_count >= 2
+
+
+class TestSendLongMessage:
+    """Test _send_long_message helper function."""
+
+    @pytest.mark.asyncio
+    async def test_send_short_message(self, bot):
+        """Test sending a short message that doesn't need splitting."""
+        mock_channel = AsyncMock()
+        short_content = "This is a short message"
+
+        await bot._send_long_message(mock_channel, short_content)
+
+        mock_channel.send.assert_called_once_with(short_content)
+
+    @pytest.mark.asyncio
+    async def test_send_long_message_splits(self, bot):
+        """Test sending a long message splits correctly."""
+        mock_channel = AsyncMock()
+
+        # Create content that exceeds 2000 chars
+        lines = [f"Line {i}: " + "x" * 100 for i in range(30)]
+        long_content = "\n".join(lines)
+
+        assert len(long_content) > 2000
+
+        await bot._send_long_message(mock_channel, long_content)
+
+        # Should be called multiple times
+        assert mock_channel.send.call_count >= 2
+
+    @pytest.mark.asyncio
+    async def test_send_long_message_respects_max_length(self, bot):
+        """Test that message splitting respects max_length parameter."""
+        mock_channel = AsyncMock()
+
+        content = "Line 1\n" + ("x" * 100) + "\nLine 2\n" + ("y" * 100)
+
+        await bot._send_long_message(mock_channel, content, max_length=150)
+
+        # Should split into multiple parts
+        assert mock_channel.send.call_count >= 2
+
+        # Each sent message should not exceed max_length
+        for call in mock_channel.send.call_args_list:
+            sent_content = call[0][0]
+            assert len(sent_content) <= 150
+
+    @pytest.mark.asyncio
+    async def test_send_long_message_preserves_content(self, bot):
+        """Test that all content is sent when splitting."""
+        mock_channel = AsyncMock()
+
+        lines = [f"Important line {i}" for i in range(50)]
+        content = "\n".join(lines)
+
+        await bot._send_long_message(mock_channel, content, max_length=500)
+
+        # Reconstruct sent content
+        sent_parts = [call[0][0] for call in mock_channel.send.call_args_list]
+        reconstructed = "\n".join(sent_parts)
+
+        # All lines should be present (order and exact whitespace may vary)
+        for line in lines:
+            assert line in reconstructed

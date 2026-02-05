@@ -14,29 +14,29 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
-        # Don't try to parse list fields as JSON
+        # Don't try to parse env vars as JSON for complex types
         env_parse_none_str="",
+        # Disable JSON parsing for environment variables
+        env_parse_enums=True,
     )
 
     # Discord
     discord_token: SecretStr = Field(description="Discord bot token")
-    allowed_user_ids: list[int] = Field(
-        default_factory=list, description="Discord user IDs allowed to interact"
+    allowed_user_ids_str: str | None = Field(
+        default=None,
+        alias="ALLOWED_USER_IDS",
+        description="Discord user IDs allowed to interact (comma-separated)",
     )
 
-    @field_validator("allowed_user_ids", mode="before")
-    @classmethod
-    def parse_user_ids(cls, v: str | list[int] | None) -> list[int]:
-        """Parse comma-separated user IDs from environment variable."""
-        if v is None or v == "":
+    @property
+    def allowed_user_ids(self) -> list[int]:
+        """Parse and return allowed user IDs as a list."""
+        if self.allowed_user_ids_str is None:
             return []
-        if isinstance(v, list):
-            return v
-        if isinstance(v, str):
-            if not v.strip():
-                return []
-            return [int(uid.strip()) for uid in v.split(",") if uid.strip()]
-        return []
+        value = self.allowed_user_ids_str.strip()
+        if not value:
+            return []
+        return [int(uid.strip()) for uid in value.split(",") if uid.strip()]
 
     # Gemini (for embeddings)
     gemini_api_key: SecretStr = Field(description="Gemini API key for embeddings")

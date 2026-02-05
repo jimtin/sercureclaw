@@ -49,15 +49,15 @@ class TestMessageRouter:
 
     @pytest.fixture
     def router(self, monkeypatch):
-        """Create MessageRouter with mocked Gemini client."""
+        """Create GeminiRouterBackend with mocked Gemini client."""
         monkeypatch.setenv("DISCORD_TOKEN", "test")
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
         mock_client = Mock()
         with patch("secureclaw.agent.router.genai.Client", return_value=mock_client):
-            from secureclaw.agent.router import MessageRouter
+            from secureclaw.agent.router import GeminiRouterBackend
 
-            return MessageRouter()
+            return GeminiRouterBackend()
 
     @pytest.mark.asyncio
     async def test_classify_simple_query(self, router, monkeypatch):

@@ -34,7 +34,7 @@ class TestSettingsInitialization:
         monkeypatch.setenv("GEMINI_API_KEY", "gemini-key-456")
         monkeypatch.setenv("ANTHROPIC_API_KEY", "anthropic-key-789")
         monkeypatch.setenv("OPENAI_API_KEY", "openai-key-abc")
-        monkeypatch.setenv("ALLOWED_USER_IDS", "[111,222,333]")
+        monkeypatch.setenv("ALLOWED_USER_IDS", "111,222,333")
         monkeypatch.setenv("QDRANT_HOST", "custom-host")
         monkeypatch.setenv("QDRANT_PORT", "7000")
         monkeypatch.setenv("ENVIRONMENT", "development")
@@ -181,6 +181,9 @@ class TestDefaultValues:
         """Test that Qdrant settings have correct defaults."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+        # Explicitly unset to test defaults (avoid .env file interference)
+        monkeypatch.delenv("QDRANT_HOST", raising=False)
+        monkeypatch.delenv("QDRANT_PORT", raising=False)
 
         from secureclaw.config import get_settings
 
@@ -367,6 +370,9 @@ class TestQdrantUrlProperty:
         """Test that qdrant_url is constructed correctly with default values."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+        # Explicitly unset to test defaults (avoid .env file interference)
+        monkeypatch.delenv("QDRANT_HOST", raising=False)
+        monkeypatch.delenv("QDRANT_PORT", raising=False)
 
         from secureclaw.config import get_settings
 
@@ -392,6 +398,8 @@ class TestQdrantUrlProperty:
         """Test that qdrant_url uses custom port."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+        # Explicitly set host to default (avoid .env file interference)
+        monkeypatch.setenv("QDRANT_HOST", "qdrant")
         monkeypatch.setenv("QDRANT_PORT", "9999")
 
         from secureclaw.config import get_settings
@@ -488,10 +496,10 @@ class TestSettingsValidation:
     """Tests for Settings validation and error handling."""
 
     def test_allowed_user_ids_parsing(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test that allowed_user_ids is parsed correctly from JSON array string."""
+        """Test that allowed_user_ids is parsed correctly from comma-separated string."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
-        monkeypatch.setenv("ALLOWED_USER_IDS", "[123,456,789]")
+        monkeypatch.setenv("ALLOWED_USER_IDS", "123,456,789")
 
         from secureclaw.config import get_settings
 
@@ -501,10 +509,10 @@ class TestSettingsValidation:
         assert settings.allowed_user_ids == [123, 456, 789]
 
     def test_allowed_user_ids_empty_array(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Test that empty array for allowed_user_ids results in empty list."""
+        """Test that empty string for allowed_user_ids results in empty list."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
-        monkeypatch.setenv("ALLOWED_USER_IDS", "[]")
+        monkeypatch.setenv("ALLOWED_USER_IDS", "")
 
         from secureclaw.config import get_settings
 
@@ -565,6 +573,10 @@ class TestOllamaConfiguration:
         """Test that Ollama settings have correct defaults."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+        # Explicitly unset to test defaults (avoid .env file interference)
+        monkeypatch.delenv("OLLAMA_HOST", raising=False)
+        monkeypatch.delenv("OLLAMA_PORT", raising=False)
+        monkeypatch.delenv("OLLAMA_ROUTER_MODEL", raising=False)
 
         from secureclaw.config import get_settings
 
@@ -580,6 +592,9 @@ class TestOllamaConfiguration:
         """Test that ollama_url is constructed correctly with default values."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+        # Explicitly unset to test defaults (avoid .env file interference)
+        monkeypatch.delenv("OLLAMA_HOST", raising=False)
+        monkeypatch.delenv("OLLAMA_PORT", raising=False)
 
         from secureclaw.config import get_settings
 
@@ -605,6 +620,8 @@ class TestOllamaConfiguration:
         """Test that ollama_url uses custom port."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+        # Explicitly set host to default (avoid .env file interference)
+        monkeypatch.setenv("OLLAMA_HOST", "ollama")
         monkeypatch.setenv("OLLAMA_PORT", "8080")
 
         from secureclaw.config import get_settings
@@ -658,6 +675,8 @@ class TestRouterBackendConfiguration:
         """Test that router_backend defaults to 'gemini'."""
         monkeypatch.setenv("DISCORD_TOKEN", "test-discord-token")
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+        # Explicitly unset to test defaults (avoid .env file interference)
+        monkeypatch.delenv("ROUTER_BACKEND", raising=False)
 
         from secureclaw.config import get_settings
 

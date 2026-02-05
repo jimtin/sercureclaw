@@ -3,8 +3,20 @@
 import sys
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import httpx
 import pytest
 from anthropic import APIConnectionError, APITimeoutError, RateLimitError
+
+
+def create_mock_request() -> httpx.Request:
+    """Create a mock httpx.Request for error constructors."""
+    return httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+
+
+def create_mock_response(status_code: int = 429) -> httpx.Response:
+    """Create a mock httpx.Response for error constructors."""
+    return httpx.Response(status_code=status_code, request=create_mock_request())
+
 
 # Mock openai module if not installed
 if "openai" not in sys.modules:
@@ -64,7 +76,7 @@ class TestRetryWithExponentialBackoff:
             nonlocal call_count
             call_count += 1
             if call_count < 3:
-                raise APIConnectionError("Connection failed")
+                raise APIConnectionError(message="Connection failed", request=create_mock_request())
             return "success"
 
         result = await retry_with_exponential_backoff(flaky_func, max_retries=3)
@@ -82,7 +94,7 @@ class TestRetryWithExponentialBackoff:
             nonlocal call_count
             call_count += 1
             if call_count < 2:
-                raise APITimeoutError("Timeout")
+                raise APITimeoutError(request=create_mock_request())
             return "success"
 
         result = await retry_with_exponential_backoff(timeout_func, max_retries=3)
@@ -113,7 +125,7 @@ class TestRetryWithExponentialBackoff:
         from secureclaw.agent.core import retry_with_exponential_backoff
 
         async def always_fail():
-            raise APIConnectionError("Always fails")
+            raise APIConnectionError(message="Always fails", request=create_mock_request())
 
         with pytest.raises(APIConnectionError):
             await retry_with_exponential_backoff(always_fail, max_retries=3)
@@ -129,7 +141,7 @@ class TestRetryWithExponentialBackoff:
             nonlocal call_count
             call_count += 1
             if call_count < 2:
-                raise RateLimitError("Rate limited")
+                raise RateLimitError("Rate limited", response=create_mock_response(429), body=None)
             return "success"
 
         result = await retry_with_exponential_backoff(rate_limited_func, max_retries=3)
@@ -164,7 +176,7 @@ class TestRetryWithExponentialBackoff:
         delays = []
 
         async def track_delay_func():
-            raise APIConnectionError("Fail")
+            raise APIConnectionError(message="Fail", request=create_mock_request())
 
         original_sleep = asyncio.sleep
 
@@ -198,11 +210,13 @@ class TestRetryWithExponentialBackoff:
         delays = []
 
         async def always_fail():
-            raise APIConnectionError("Fail")
+            raise APIConnectionError(message="Fail", request=create_mock_request())
+
+        original_sleep = asyncio.sleep
 
         async def mock_sleep(delay):
             delays.append(delay)
-            await asyncio.sleep(0)
+            await original_sleep(0)  # Don't actually sleep in tests
 
         with (  # noqa: SIM117
             patch("asyncio.sleep", side_effect=mock_sleep),
@@ -257,12 +271,18 @@ class TestAgentInitialization:
         monkeypatch.setenv("DISCORD_TOKEN", "test")
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
         monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
-        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "")  # Empty string to ensure no key
+
+        # Force settings reload after environment change
+        from secureclaw.config import get_settings
+
+        get_settings.cache_clear()
 
         with (
             patch("secureclaw.memory.qdrant.AsyncQdrantClient", return_value=mock_qdrant_client),
             patch("secureclaw.memory.embeddings.genai.Client", return_value=mock_embeddings_client),
             patch("secureclaw.agent.router.genai.Client", return_value=Mock()),
+            patch("secureclaw.agent.router_ollama.httpx.AsyncClient"),
         ):
             from secureclaw.agent.core import Agent
             from secureclaw.memory.qdrant import QdrantMemory
@@ -283,12 +303,18 @@ class TestAgentInitialization:
         monkeypatch.setenv("DISCORD_TOKEN", "test")
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-anthropic-key")
-        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "")  # Empty string to ensure no key
+
+        # Force settings reload after environment change
+        from secureclaw.config import get_settings
+
+        get_settings.cache_clear()
 
         with (
             patch("secureclaw.memory.qdrant.AsyncQdrantClient", return_value=mock_qdrant_client),
             patch("secureclaw.memory.embeddings.genai.Client", return_value=mock_embeddings_client),
             patch("secureclaw.agent.router.genai.Client", return_value=Mock()),
+            patch("secureclaw.agent.router_ollama.httpx.AsyncClient"),
         ):
             from secureclaw.agent.core import Agent
             from secureclaw.memory.qdrant import QdrantMemory
@@ -308,13 +334,19 @@ class TestAgentInitialization:
         """Test agent initialization without Claude or OpenAI keys."""
         monkeypatch.setenv("DISCORD_TOKEN", "test")
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "")  # Empty string to ensure no key
+        monkeypatch.setenv("OPENAI_API_KEY", "")  # Empty string to ensure no key
+
+        # Force settings reload after environment change
+        from secureclaw.config import get_settings
+
+        get_settings.cache_clear()
 
         with (
             patch("secureclaw.memory.qdrant.AsyncQdrantClient", return_value=mock_qdrant_client),
             patch("secureclaw.memory.embeddings.genai.Client", return_value=mock_embeddings_client),
             patch("secureclaw.agent.router.genai.Client", return_value=Mock()),
+            patch("secureclaw.agent.router_ollama.httpx.AsyncClient"),
         ):
             from secureclaw.agent.core import Agent
             from secureclaw.memory.qdrant import QdrantMemory
@@ -453,7 +485,7 @@ class TestClaudeResponseGeneration:
 
         # Verify the call arguments
         call_args = mock_claude_client.messages.create.call_args
-        assert call_args.kwargs["model"] == "claude-3-5-sonnet-20241022"
+        assert call_args.kwargs["model"] == "claude-sonnet-4-5-20250929"
         assert call_args.kwargs["max_tokens"] == 2048
         assert "SecureClaw" in call_args.kwargs["system"]
         assert "Relevant Memories" in call_args.kwargs["system"]
@@ -488,7 +520,9 @@ class TestClaudeResponseGeneration:
     ):
         """Test Claude response falls back on connection error."""
         mock_claude_client.messages.create = AsyncMock(
-            side_effect=APIConnectionError("Connection failed")
+            side_effect=APIConnectionError(
+                message="Connection failed", request=create_mock_request()
+            )
         )
 
         # Mock the router's simple response
@@ -576,7 +610,7 @@ class TestOpenAIResponseGeneration:
 
         # Verify the call arguments
         call_args = mock_openai_client.chat.completions.create.call_args
-        assert call_args.kwargs["model"] == "gpt-4o-mini"
+        assert call_args.kwargs["model"] == "gpt-4o"
         assert call_args.kwargs["max_tokens"] == 2048
 
     @pytest.mark.asyncio
@@ -629,13 +663,19 @@ class TestFallbackToGeminiFlash:
         """Create agent with only Gemini Flash (no Claude/OpenAI)."""
         monkeypatch.setenv("DISCORD_TOKEN", "test")
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "")  # Empty string to ensure no key
+        monkeypatch.setenv("OPENAI_API_KEY", "")  # Empty string to ensure no key
+
+        # Force settings reload
+        from secureclaw.config import get_settings
+
+        get_settings.cache_clear()
 
         with (
             patch("secureclaw.memory.qdrant.AsyncQdrantClient", return_value=mock_qdrant_client),
             patch("secureclaw.memory.embeddings.genai.Client", return_value=mock_embeddings_client),
             patch("secureclaw.agent.router.genai.Client", return_value=Mock()),
+            patch("secureclaw.agent.router_ollama.httpx.AsyncClient"),
         ):
             from secureclaw.agent.core import Agent
             from secureclaw.memory.qdrant import QdrantMemory
@@ -1040,7 +1080,9 @@ class TestErrorHandling:
         import anthropic
 
         agent._claude_client = mock_claude_client
-        mock_claude_client.messages.create = AsyncMock(side_effect=anthropic.APIError("API Error"))
+        mock_claude_client.messages.create = AsyncMock(
+            side_effect=anthropic.APIError("API Error", request=create_mock_request(), body=None)
+        )
         agent._router.generate_simple_response = AsyncMock(return_value="Fallback response")
 
         response = await agent._generate_claude_response(

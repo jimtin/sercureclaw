@@ -8,10 +8,22 @@ import os
 import subprocess
 import time
 from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
 from typing import Any
 
 import pytest
 import pytest_asyncio
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+
+    # Load from project root .env file
+    env_path = Path(__file__).parent.parent.parent / ".env"
+    load_dotenv(dotenv_path=env_path)
+except ImportError:
+    # python-dotenv not installed, rely on environment variables being set
+    pass
 
 # Check if we should run integration tests
 SKIP_INTEGRATION = os.getenv("SKIP_INTEGRATION_TESTS", "false").lower() == "true"

@@ -141,18 +141,19 @@ def detect_prompt_injection(content: str) -> bool:
         r"\bforget\s+(?:your|all|the)\s+(?:instructions?|commands?|rules?|prompts?)",
         r"\boverride\s+(?:your|all|the|system)\s+(?:instructions?|commands?|settings?)",
         r"\byou\s+are\s+now\s+(?:a|an|in)",
-        r"\bact\s+as\s+(?:if|though|a|an)",
+        r"\bact\s+as\s+(?:if|though|my|the|a\s+different|an?\s+unrestricted)\b",
         r"\bpretend\s+(?:you\s+are|to\s+be|that)",
         r"\bnew\s+(?:instructions?|commands?|rules?)[\s:]+",
         r"\bsystem\s+(?:prompt|message|instruction)[\s:]+",
         r"\bjailbreak(?:ing)?",
         r"\bdan\s+mode",
+        r"\b(?:enable|activate)\s+developer\s+mode",
         r"\bdeveloper\s+mode\s+(?:enable|on|activated?)",
         r"\brole[\s:]?\s*system",
         r"\bbegin\s+new\s+(?:task|role|persona)",
-        r"\bignor[ei]ng\s+safeguards?",
-        r"\bdisable\s+(?:filters?|safety|restrictions?)",
-        r"\bbypass\s+(?:filters?|safety|restrictions?)",
+        r"\bignor(?:e|ing)\s+(?:all\s+)?(?:safeguards?|safety)",
+        r"\bdisable\s+(?:all\s+)?(?:filters?|safety|restrictions?)",
+        r"\bbypass\s+(?:all\s+)?(?:filters?|safety|restrictions?)",
     ]
 
     # Check regex patterns
