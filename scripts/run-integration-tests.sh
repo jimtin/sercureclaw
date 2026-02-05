@@ -66,7 +66,12 @@ echo -e "${GREEN}✓ Cleanup complete${NC}"
 echo ""
 
 # Activate virtual environment if it exists
-if [ -d "venv" ]; then
+if [ -d ".venv" ]; then
+    echo -e "${BLUE}Activating virtual environment...${NC}"
+    source .venv/bin/activate
+    echo -e "${GREEN}✓ Virtual environment activated${NC}"
+    echo ""
+elif [ -d "venv" ]; then
     echo -e "${BLUE}Activating virtual environment...${NC}"
     source venv/bin/activate
     echo -e "${GREEN}✓ Virtual environment activated${NC}"
@@ -74,9 +79,9 @@ if [ -d "venv" ]; then
 fi
 
 # Install test dependencies if needed
-if ! python -c "import pytest" 2>/dev/null; then
+if ! python -c "import pytest" 2>/dev/null || ! python -c "import pytest_cov" 2>/dev/null; then
     echo -e "${YELLOW}Installing test dependencies...${NC}"
-    pip install -q pytest pytest-asyncio
+    pip install -q pytest pytest-asyncio pytest-cov
     echo -e "${GREEN}✓ Test dependencies installed${NC}"
     echo ""
 fi
@@ -89,7 +94,7 @@ echo ""
 # Set Python path
 export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
 
-# Run pytest with integration marker
+# Run pytest with integration marker (tests both Gemini and Ollama backends)
 if pytest tests/integration/test_e2e.py -v -s -m integration --tb=short; then
     echo ""
     echo -e "${GREEN}═══════════════════════════════════════════════${NC}"

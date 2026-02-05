@@ -279,3 +279,8 @@ class QdrantMemory:
         # Sort by timestamp
         messages.sort(key=lambda m: m.get("timestamp", ""))
         return messages
+
+    async def close(self) -> None:
+        """Close the Qdrant client connection."""
+        if hasattr(self._client, "close"):
+            await self._client.close()
