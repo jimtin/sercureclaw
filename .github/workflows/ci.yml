@@ -199,9 +199,13 @@ jobs:
           LOG_LEVEL=INFO
           ENVIRONMENT=ci
 
-          # Qdrant (will be started by Docker Compose)
-          QDRANT_HOST=qdrant
+          # Qdrant (will be started by Docker Compose, tests run on host so use localhost)
+          QDRANT_HOST=localhost
           QDRANT_PORT=6333
+
+          # Ollama (tests run on host so use localhost)
+          OLLAMA_HOST=localhost
+          OLLAMA_PORT=11434
 
           # Router backend
           ROUTER_BACKEND=gemini
