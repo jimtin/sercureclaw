@@ -37,6 +37,8 @@ paths = [
     '''docs/SECURITY\.md''',  # Contains example patterns for secret detection
     # Ignore wiki directory (copy of docs with example secrets)
     '''wiki/''',
+    # Ignore GitHub secrets configuration guide (contains example tokens/keys)
+    '''GITHUB_SECRETS\.md''',
 ]
 
 # Regexes to ignore (known false positives)
