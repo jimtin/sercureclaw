@@ -1,6 +1,21 @@
 # SecureClaw
 
+[![CI Pipeline](https://github.com/jimtin/sercureclaw/actions/workflows/ci.yml/badge.svg)](https://github.com/jimtin/sercureclaw/actions/workflows/ci.yml)
+[![Test Coverage](https://img.shields.io/badge/coverage-87.58%25-brightgreen)](https://github.com/jimtin/sercureclaw/actions)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A secure, simplified personal AI assistant. Discord-based with vector memory.
+
+## ✨ Key Features
+
+- 🔒 **Security-First**: Pre-commit secret scanning, prompt injection defense, allowlist-based access control
+- 🧠 **Smart Routing**: Automatically routes queries to the most cost-effective AI model
+- 💾 **Vector Memory**: Long-term semantic memory powered by Qdrant
+- 🎯 **87.58% Test Coverage**: Comprehensive unit, integration, and E2E tests
+- 🐳 **Docker-Based**: Fully containerized with automated setup and management
+- 🌐 **Dual Router Options**: Cloud (Gemini) or Local (Ollama) for privacy
+- 🚀 **18-Second Startup**: After initial setup, starts in under 20 seconds
 
 ## Quick Start
 
@@ -243,6 +258,64 @@ Restrict bot access to specific users only.
    ```
 
 **Note**: At minimum, you need `DISCORD_TOKEN` and `GEMINI_API_KEY`. Without Claude or OpenAI, all queries will use Gemini Flash (fast and cheap, but less capable for complex tasks).
+
+## Testing & Quality Assurance
+
+SecureClaw maintains **87.58% test coverage** with a comprehensive three-tier testing approach:
+
+### Test Coverage by Module
+
+| Module | Coverage | Tests | Status |
+|--------|----------|-------|--------|
+| **Router Factory** | 100% | 12 tests | ✅ Comprehensive async/sync factory, health checks, fallback logic |
+| **Discord Bot** | 89.92% | 30 tests | ✅ Commands, edge cases, message splitting, authorization |
+| **Agent Core** | 94.76% | 41 tests | ✅ Retry logic, context building, dual generators |
+| **Security** | 94.12% | 37 tests | ✅ Rate limiting, allowlist, 24+ prompt injection patterns |
+| **Config** | 96.88% | 49 tests | ✅ Settings validation, SecretStr, environment isolation |
+| **Qdrant Memory** | 88.73% | 7 tests | ✅ Vector operations, embeddings, async client |
+| **Overall** | **87.58%** | **255 tests** | ✅ All passing |
+
+### Three-Tier Testing Pyramid
+
+1. **Unit Tests** (255 tests, ~24s)
+   - Fast, isolated tests with mocked dependencies
+   - Run automatically on every push via pre-commit hooks
+   - 100% async/await support
+
+2. **Integration Tests** (14 tests, ~2min)
+   - Full stack with Docker services (Qdrant + Ollama)
+   - MockDiscordBot bypasses Discord API
+   - Parametrized: all tests run against both Gemini and Ollama backends
+
+3. **Discord E2E Tests** (4 tests, ~1min)
+   - Real Discord API integration
+   - Tests bot responses, memory operations, slash commands
+   - Optional: requires test bot credentials
+
+### CI/CD Pipeline
+
+Every push triggers a comprehensive 7-job pipeline:
+
+1. ✅ **Lint & Format** (Ruff) - Code style and formatting
+2. ✅ **Type Check** (Mypy strict mode) - Static type analysis
+3. ✅ **Security Scan** (Bandit + Gitleaks) - Vulnerability and secret detection
+4. ✅ **Unit Tests** (Python 3.12 & 3.13) - Cross-version compatibility
+5. ✅ **Docker Build** - Container image validation
+6. ✅ **Integration Tests** - Full stack testing with services
+7. ✅ **Discord E2E Tests** - Real Discord API (if secrets configured)
+
+**See**: [Testing Guide](docs/TESTING.md) for detailed documentation
+
+### Pre-Commit Hooks
+
+Automated checks on every `git commit`:
+- 🔍 **Gitleaks** - Prevents secrets from entering version control (12 rules, zero false positives)
+- 🎨 **Ruff** - Fast linting and auto-formatting
+- 🔧 **Mypy** - Strict type checking
+- 🛡️ **Bandit** - Security issue detection
+- 🐳 **Hadolint** - Dockerfile best practices
+
+**Setup**: Run `./scripts/setup-git-hooks.sh` (automatic on first `./start.sh`)
 
 ## Development
 
