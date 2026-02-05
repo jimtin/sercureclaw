@@ -1,6 +1,7 @@
 """Tests for security utilities."""
 
 import pytest
+
 from secureclaw.discord.security import (
     RateLimiter,
     UserAllowlist,

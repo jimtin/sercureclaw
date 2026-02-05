@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import SecretStr
+
 from secureclaw.agent.router import GeminiRouterBackend, MessageRouter
 from secureclaw.agent.router_factory import create_router, create_router_sync
 from secureclaw.agent.router_ollama import OllamaRouterBackend

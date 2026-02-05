@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import discord
 import pytest
+
 from secureclaw.discord.bot import SecureClawBot
 from secureclaw.memory.qdrant import QdrantMemory
 
