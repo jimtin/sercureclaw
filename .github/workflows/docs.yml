@@ -1,0 +1,93 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Build and deploy MkDocs to GitHub Pages
+  mkdocs:
+    name: Deploy MkDocs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install MkDocs
+        run: |
+          pip install mkdocs-material
+
+      - name: Build and deploy
+        run: mkdocs gh-deploy --force --no-strict
+
+  # Job 2: Sync docs to GitHub Wiki
+  wiki:
+    name: Sync Wiki
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync to Wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Configure git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Clone wiki repo
+          git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.wiki.git wiki-repo
+
+          # Create filename mapping (UPPERCASE_UNDERSCORE -> Title-Case-Hyphen)
+          declare -A FILE_MAP=(
+            ["ARCHITECTURE.md"]="Architecture.md"
+            ["COMMANDS.md"]="Commands.md"
+            ["DOCKER_ARCHITECTURE.md"]="Docker-Architecture.md"
+            ["FAQ.md"]="FAQ.md"
+            ["SECURITY.md"]="Security.md"
+            ["STARTUP_WALKTHROUGH.md"]="Startup-Walkthrough.md"
+            ["TESTING.md"]="Testing.md"
+            ["TROUBLESHOOTING.md"]="Troubleshooting.md"
+            ["CI_CD.md"]="CI-CD.md"
+            ["index.md"]="Home.md"
+          )
+
+          # Copy and rename files
+          for src in "${!FILE_MAP[@]}"; do
+            dest="${FILE_MAP[$src]}"
+            if [ -f "docs/$src" ]; then
+              cp "docs/$src" "wiki-repo/$dest"
+              echo "Copied docs/$src -> wiki-repo/$dest"
+            fi
+          done
+
+          # Commit and push if changes exist
+          cd wiki-repo
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to wiki"
+          else
+            git commit -m "Sync from docs/ - $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+            echo "Wiki updated successfully"
+          fi
