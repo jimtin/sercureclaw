@@ -1,7 +1,7 @@
 # Zetherion AI Stop Script for Windows
 # Run as: powershell -ExecutionPolicy Bypass -File stop.ps1
 
-#Requires -Version 7.0
+#Requires -Version 5.1
 
 $ErrorActionPreference = "Stop"
 
