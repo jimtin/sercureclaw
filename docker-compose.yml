@@ -79,6 +79,7 @@ services:
     ports:
       - "6333:6333"
     healthcheck:
+      # TCP check works for both TLS and non-TLS modes
       test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/6333' || exit 1"]
       interval: 10s
       timeout: 5s
@@ -86,6 +87,10 @@ services:
       start_period: 10s
     volumes:
       - qdrant_storage:/qdrant/storage
+      # TLS certificates (Phase 5A) - run scripts/generate-qdrant-certs.sh first
+      # Uncomment below when TLS is enabled:
+      # - ./data/certs/qdrant:/qdrant/certs:ro
+      # - ./config/qdrant.yaml:/qdrant/config/production.yaml:ro
     networks:
       - secureclaw-net
     # Resource limits for vector database

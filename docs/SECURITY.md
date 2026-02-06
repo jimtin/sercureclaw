@@ -17,7 +17,8 @@ This document describes how SecureClaw is secured across the full development li
 9. [Testing Strategy](#9-testing-strategy)
 10. [Logging & Monitoring](#10-logging--monitoring)
 11. [Network Security](#11-network-security)
-12. [Gap Analysis & Recommendations](#12-gap-analysis--recommendations)
+12. [Data Encryption (Phase 5A)](#12-data-encryption-phase-5a)
+13. [Gap Analysis & Recommendations](#13-gap-analysis--recommendations)
 
 ---
 
@@ -332,7 +333,85 @@ This produces 14 tests (7 scenarios x 2 backends) with no code duplication.
 
 ---
 
-## 12. Gap Analysis & Recommendations
+## 12. Data Encryption (Phase 5A)
+
+**Files**: `src/secureclaw/security/encryption.py`, `src/secureclaw/security/keys.py`
+
+SecureClaw implements **application-layer encryption** for sensitive data stored in Qdrant. This protects data at rest even if the database is compromised.
+
+### Encryption Architecture
+
+```
+User Message --> Gemini Embedding --> Qdrant Payload
+                                          |
+                                          v
+                              FieldEncryptor.encrypt_payload()
+                                          |
+                                          v
+                              "content" field encrypted with AES-256-GCM
+                                          |
+                                          v
+                              Stored in Qdrant (ciphertext)
+```
+
+### Cryptographic Controls
+
+| Control | Implementation | Why |
+|---------|---------------|-----|
+| **Algorithm** | AES-256-GCM (authenticated encryption) | Industry standard, provides both confidentiality and integrity |
+| **Key Derivation** | PBKDF2-HMAC-SHA256, 600,000 iterations | OWASP-recommended iteration count for password-based keys |
+| **Nonce Generation** | 96-bit random nonce per encryption | Prevents nonce reuse attacks; GCM standard |
+| **Salt** | 256-bit random, persisted to `data/salt.bin` | Unique per installation, prevents rainbow table attacks |
+| **Passphrase** | User-provided via `ENCRYPTION_PASSPHRASE` (min 16 chars) | SecretStr, never logged |
+
+### What Gets Encrypted
+
+| Collection | Encrypted Field(s) | Plaintext Fields |
+|------------|-------------------|------------------|
+| `conversations` | `content` | `user_id`, `channel_id`, `role`, `timestamp` |
+| `long_term_memory` | `content` | `type`, `timestamp`, metadata |
+| `user_profiles` (Phase 5C) | `key`, `value` | `category`, `confidence`, `user_id` |
+| `skill_tasks` (Phase 5E) | `title`, `description` | `status`, `priority`, `deadline` |
+
+### Security Properties
+
+- **Embeddings remain unencrypted**: Required for vector similarity search. Property-preserving encryption is a future enhancement.
+- **Decryption failures**: Logged and passed through (graceful handling of legacy unencrypted data).
+- **Key rotation**: Supported via `KeyManager.rotate_key()` but requires data migration.
+- **Tamper detection**: GCM authentication tag detects any modification to ciphertext.
+
+### Enabling Encryption
+
+```bash
+# 1. Generate a strong passphrase
+openssl rand -base64 32
+
+# 2. Add to .env
+ENCRYPTION_ENABLED=true
+ENCRYPTION_PASSPHRASE="your-generated-passphrase-here"
+
+# 3. Salt file created automatically on first run at data/salt.bin
+```
+
+### TLS for Qdrant (In-Transit Encryption)
+
+For complete protection, TLS can be enabled for Qdrant connections:
+
+```bash
+# Generate self-signed certificates
+./scripts/generate-qdrant-certs.sh
+
+# Enable in .env
+QDRANT_USE_TLS=true
+
+# Uncomment TLS mounts in docker-compose.yml
+```
+
+This provides encryption in transit between the bot container and Qdrant, completing the defense-in-depth for stored data.
+
+---
+
+## 13. Gap Analysis & Recommendations
 
 The following automated security best practices have been **fully implemented** as of 2026-02-06. This section documents what was done and serves as a reference for the security controls now in place.
 

@@ -1,8 +1,9 @@
 """Configuration management for SecureClaw."""
 
 from functools import lru_cache
+from typing import Self
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -52,6 +53,10 @@ class Settings(BaseSettings):
     # Qdrant
     qdrant_host: str = Field(default="qdrant", description="Qdrant server host")
     qdrant_port: int = Field(default=6333, description="Qdrant server port")
+    qdrant_use_tls: bool = Field(default=False, description="Use TLS for Qdrant connection")
+    qdrant_cert_path: str | None = Field(
+        default=None, description="Path to Qdrant TLS certificate for verification"
+    )
 
     # Application
     environment: str = Field(default="production", description="Environment name")
@@ -106,6 +111,74 @@ class Settings(BaseSettings):
     ollama_router_model: str = Field(default="llama3.1:8b", description="Ollama model for routing")
     ollama_timeout: int = Field(default=30, description="Ollama API timeout in seconds")
 
+    # Encryption Configuration (Phase 5A)
+    encryption_enabled: bool = Field(
+        default=True, description="Enable field-level encryption for sensitive data"
+    )
+    encryption_passphrase: SecretStr | None = Field(
+        default=None, description="Master passphrase for encryption key derivation (min 16 chars)"
+    )
+    encryption_salt_path: str = Field(
+        default="data/salt.bin", description="Path to store the encryption salt file"
+    )
+
+    # InferenceBroker Configuration (Phase 5B)
+    inference_broker_enabled: bool = Field(
+        default=True, description="Enable smart multi-provider routing via InferenceBroker"
+    )
+    cost_tracking_enabled: bool = Field(
+        default=True, description="Track costs per provider and task type"
+    )
+
+    # Model Registry Configuration (Phase 5B.1)
+    model_discovery_enabled: bool = Field(
+        default=True, description="Enable automatic model discovery from provider APIs"
+    )
+    model_refresh_hours: int = Field(
+        default=24, description="Hours between model discovery refreshes"
+    )
+    anthropic_tier: str = Field(
+        default="balanced", description="Default tier for Anthropic models: quality, balanced, fast"
+    )
+    openai_tier: str = Field(
+        default="balanced", description="Default tier for OpenAI models: quality, balanced, fast"
+    )
+    google_tier: str = Field(
+        default="fast", description="Default tier for Google models: quality, balanced, fast"
+    )
+
+    # Cost Tracking Configuration (Phase 5B.1)
+    cost_db_path: str = Field(
+        default="data/costs.db", description="Path to SQLite database for cost tracking"
+    )
+    daily_budget_usd: float | None = Field(
+        default=None, description="Optional daily budget threshold in USD for alerts"
+    )
+    monthly_budget_usd: float | None = Field(
+        default=None, description="Optional monthly budget threshold in USD for alerts"
+    )
+    budget_warning_pct: float = Field(
+        default=80.0, description="Percentage of budget at which to send warning (0-100)"
+    )
+
+    # Notification Configuration (Phase 5B.1)
+    notifications_enabled: bool = Field(
+        default=True, description="Enable cost and model notifications"
+    )
+    notify_on_new_models: bool = Field(
+        default=True, description="Send notification when new models are discovered"
+    )
+    notify_on_deprecation: bool = Field(
+        default=True, description="Send notification when models are deprecated"
+    )
+    notify_on_missing_pricing: bool = Field(
+        default=False, description="Send notification for models without pricing data"
+    )
+    daily_summary_enabled: bool = Field(
+        default=False, description="Send daily cost summary notification"
+    )
+    daily_summary_hour: int = Field(default=9, description="Hour (0-23) to send daily cost summary")
+
     @field_validator("router_backend")
     @classmethod
     def validate_router_backend(cls, v: str) -> str:
@@ -114,6 +187,44 @@ class Settings(BaseSettings):
         if v not in valid_backends:
             raise ValueError(f"router_backend must be one of {valid_backends}, got: {v}")
         return v
+
+    @field_validator("anthropic_tier", "openai_tier", "google_tier")
+    @classmethod
+    def validate_tier(cls, v: str) -> str:
+        """Validate tier setting."""
+        valid_tiers = ["quality", "balanced", "fast"]
+        if v not in valid_tiers:
+            raise ValueError(f"tier must be one of {valid_tiers}, got: {v}")
+        return v
+
+    @field_validator("budget_warning_pct")
+    @classmethod
+    def validate_budget_warning_pct(cls, v: float) -> float:
+        """Validate budget warning percentage is between 0 and 100."""
+        if not 0 <= v <= 100:
+            raise ValueError(f"budget_warning_pct must be between 0 and 100, got: {v}")
+        return v
+
+    @field_validator("daily_summary_hour")
+    @classmethod
+    def validate_daily_summary_hour(cls, v: int) -> int:
+        """Validate daily summary hour is between 0 and 23."""
+        if not 0 <= v <= 23:
+            raise ValueError(f"daily_summary_hour must be between 0 and 23, got: {v}")
+        return v
+
+    @model_validator(mode="after")
+    def validate_encryption_config(self) -> Self:
+        """Validate encryption configuration consistency."""
+        if self.encryption_enabled:
+            if self.encryption_passphrase is None:
+                raise ValueError(
+                    "encryption_passphrase is required when encryption_enabled is True"
+                )
+            passphrase = self.encryption_passphrase.get_secret_value()
+            if len(passphrase) < 16:
+                raise ValueError("encryption_passphrase must be at least 16 characters")
+        return self
 
     @property
     def ollama_url(self) -> str:
@@ -128,7 +239,8 @@ class Settings(BaseSettings):
     @property
     def qdrant_url(self) -> str:
         """Get the full Qdrant URL."""
-        return f"http://{self.qdrant_host}:{self.qdrant_port}"
+        scheme = "https" if self.qdrant_use_tls else "http"
+        return f"{scheme}://{self.qdrant_host}:{self.qdrant_port}"
 
 
 @lru_cache

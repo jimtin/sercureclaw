@@ -5,6 +5,7 @@ audioop-lts>=0.2.1;python_version>='3.13'  # Required for discord.py on Python 3
 qdrant-client==1.12.1
 google-genai==1.9.0
 anthropic==0.42.0
+cryptography==44.0.0  # AES-256-GCM encryption for Phase 5A
 openai==1.58.1
 pydantic==2.10.3
 pydantic-settings==2.7.0

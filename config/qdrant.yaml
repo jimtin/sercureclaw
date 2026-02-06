@@ -1,0 +1,14 @@
+# Qdrant configuration for SecureClaw
+# TLS enabled for secure communication
+
+service:
+  # HTTP API settings
+  http_port: 6333
+
+  # Enable TLS for HTTP API
+  enable_tls: true
+
+# TLS configuration
+tls:
+  cert: /qdrant/certs/server.crt
+  key: /qdrant/certs/server.key

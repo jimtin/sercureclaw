@@ -11,7 +11,9 @@ from openai import APIConnectionError as OpenAIConnectionError
 from openai import APITimeoutError as OpenAITimeoutError
 from openai import RateLimitError as OpenAIRateLimitError
 
+from secureclaw.agent.inference import InferenceBroker
 from secureclaw.agent.prompts import SYSTEM_PROMPT
+from secureclaw.agent.providers import TaskType
 from secureclaw.agent.router import MessageIntent, RoutingDecision
 from secureclaw.agent.router_factory import create_router_sync
 from secureclaw.config import get_settings
@@ -130,10 +132,16 @@ class Agent:
             self._openai_client = None
             self._has_openai = False
 
+        # Initialize InferenceBroker for smart multi-provider routing (Phase 5B)
+        self._inference_broker: InferenceBroker | None = None
+        if settings.inference_broker_enabled:
+            self._inference_broker = InferenceBroker()
+
         log.info(
             "agent_initialized",
             has_claude=self._has_claude,
             has_openai=self._has_openai,
+            inference_broker_enabled=self._inference_broker is not None,
         )
 
     async def generate_response(
@@ -243,7 +251,7 @@ class Agent:
         message: str,
         routing: RoutingDecision,
     ) -> str:
-        """Handle complex tasks with Claude (capable) or Flash (fallback).
+        """Handle complex tasks with intelligent provider routing.
 
         Args:
             user_id: Discord user ID.
@@ -257,7 +265,35 @@ class Agent:
         # Fetch context once for reuse across models
         recent_messages, relevant_memories = await self._build_context(user_id, channel_id, message)
 
-        # If Claude is available and this warrants it, use Claude
+        # Build system prompt with context
+        system_prompt = SYSTEM_PROMPT
+        if relevant_memories:
+            memory_text = "\n".join(
+                f"- {m['content']}" for m in relevant_memories if m["score"] > 0.7
+            )
+            if memory_text:
+                system_prompt = f"{SYSTEM_PROMPT}\n\n## Relevant Memories\n{memory_text}"
+
+        # Format conversation history
+        messages = [
+            {"role": msg["role"], "content": msg["content"]} for msg in recent_messages[-10:]
+        ]
+
+        # Use InferenceBroker if available (Phase 5B)
+        if self._inference_broker:
+            # Classify task type for optimal provider selection
+            task_type = self._classify_task_type(message)
+            log.debug("task_type_classified", task_type=task_type.value)
+
+            result = await self._inference_broker.infer(
+                prompt=message,
+                task_type=task_type,
+                system_prompt=system_prompt,
+                messages=messages,
+            )
+            return result.content
+
+        # Fallback to legacy routing (Claude -> OpenAI -> Gemini)
         if routing.use_claude:
             if self._has_claude:
                 return await self._generate_claude_response(
@@ -271,6 +307,100 @@ class Agent:
         # Otherwise use Gemini Flash
         log.debug("using_flash_for_complex", reason="no_complex_model_available")
         return await self._router.generate_simple_response(message)
+
+    def _classify_task_type(self, message: str) -> TaskType:
+        """Classify the task type from the message content.
+
+        Args:
+            message: The user's message.
+
+        Returns:
+            The classified TaskType for provider selection.
+        """
+        lower_msg = message.lower()
+
+        # Code-related patterns
+        if any(
+            kw in lower_msg
+            for kw in [
+                "code",
+                "script",
+                "function",
+                "class",
+                "debug",
+                "fix",
+                "implement",
+                "python",
+                "javascript",
+                "typescript",
+                "java",
+                "rust",
+                "go",
+                "programming",
+                "algorithm",
+                "api",
+                "database",
+                "sql",
+            ]
+        ):
+            if any(kw in lower_msg for kw in ["review", "audit", "check"]):
+                return TaskType.CODE_REVIEW
+            elif any(kw in lower_msg for kw in ["debug", "fix", "error", "bug"]):
+                return TaskType.CODE_DEBUGGING
+            return TaskType.CODE_GENERATION
+
+        # Math/reasoning patterns
+        if any(
+            kw in lower_msg
+            for kw in [
+                "math",
+                "calculate",
+                "equation",
+                "prove",
+                "theorem",
+                "logic",
+                "reasoning",
+                "analyze",
+                "why",
+                "how does",
+                "explain in detail",
+            ]
+        ):
+            if any(kw in lower_msg for kw in ["math", "calculate", "equation"]):
+                return TaskType.MATH_ANALYSIS
+            return TaskType.COMPLEX_REASONING
+
+        # Creative patterns
+        if any(
+            kw in lower_msg
+            for kw in [
+                "write",
+                "story",
+                "poem",
+                "creative",
+                "imagine",
+                "fiction",
+                "narrative",
+                "character",
+                "plot",
+            ]
+        ):
+            return TaskType.CREATIVE_WRITING
+
+        # Long document patterns
+        if any(
+            kw in lower_msg
+            for kw in [
+                "summarize",
+                "summary",
+                "tldr",
+                "condense",
+            ]
+        ):
+            return TaskType.SUMMARIZATION
+
+        # Default to conversation for general queries
+        return TaskType.CONVERSATION
 
     async def _generate_openai_response(
         self,

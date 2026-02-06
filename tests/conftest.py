@@ -16,6 +16,8 @@ def setup_test_environment():
     # Set minimal required environment variables for Settings
     os.environ.setdefault("DISCORD_TOKEN", "test-discord-token-placeholder")
     os.environ.setdefault("GEMINI_API_KEY", "test-gemini-key-placeholder")
+    # Encryption passphrase required when encryption_enabled=True (now default)
+    os.environ.setdefault("ENCRYPTION_PASSPHRASE", "test-encryption-passphrase-for-unit-tests")
 
     # Clear the settings cache to ensure tests start fresh
     from secureclaw.config import get_settings
@@ -43,6 +45,9 @@ def mock_settings():
         qdrant_port=6333,
         environment="test",
         log_level="DEBUG",
+        # Encryption settings (Phase 5A)
+        encryption_enabled=True,
+        encryption_passphrase="test-encryption-passphrase-for-mock",
     )
     return settings
 

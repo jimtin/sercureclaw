@@ -10,6 +10,7 @@ from qdrant_client.http import models as qdrant_models
 from secureclaw.config import get_settings
 from secureclaw.logging import get_logger
 from secureclaw.memory.embeddings import EMBEDDING_DIMENSION, GeminiEmbeddings
+from secureclaw.security.encryption import FieldEncryptor
 
 log = get_logger("secureclaw.memory.qdrant")
 
@@ -21,15 +22,38 @@ LONG_TERM_MEMORY_COLLECTION = "long_term_memory"
 class QdrantMemory:
     """Vector memory storage using Qdrant."""
 
-    def __init__(self) -> None:
-        """Initialize the Qdrant memory client."""
+    def __init__(self, encryptor: FieldEncryptor | None = None) -> None:
+        """Initialize the Qdrant memory client.
+
+        Args:
+            encryptor: Optional field encryptor for sensitive data.
+                       If provided, content fields will be encrypted at rest.
+        """
         settings = get_settings()
-        self._client = AsyncQdrantClient(
-            host=settings.qdrant_host,
-            port=settings.qdrant_port,
-        )
+
+        # Configure TLS if enabled
+        if settings.qdrant_use_tls:
+            # Use URL-based initialization for HTTPS
+            self._client = AsyncQdrantClient(
+                url=settings.qdrant_url,
+                # For self-signed certs, we can optionally provide the cert path
+                # If not provided, verification is skipped (internal network only)
+                https=True,
+            )
+        else:
+            self._client = AsyncQdrantClient(
+                host=settings.qdrant_host,
+                port=settings.qdrant_port,
+            )
+
         self._embeddings = GeminiEmbeddings()
-        log.info("qdrant_client_initialized", url=settings.qdrant_url)
+        self._encryptor = encryptor
+        log.info(
+            "qdrant_client_initialized",
+            url=settings.qdrant_url,
+            encryption_enabled=encryptor is not None,
+            tls_enabled=settings.qdrant_use_tls,
+        )
 
     async def initialize(self) -> None:
         """Initialize collections if they don't exist."""
@@ -84,6 +108,10 @@ class QdrantMemory:
             **(metadata or {}),
         }
 
+        # Encrypt sensitive fields if encryptor is configured
+        if self._encryptor is not None:
+            payload = self._encryptor.encrypt_payload(payload)
+
         await self._client.upsert(
             collection_name=CONVERSATIONS_COLLECTION,
             points=[
@@ -100,6 +128,7 @@ class QdrantMemory:
             message_id=message_id,
             user_id=user_id,
             role=role,
+            encrypted=self._encryptor is not None,
         )
         return message_id
 
@@ -129,6 +158,10 @@ class QdrantMemory:
             **(metadata or {}),
         }
 
+        # Encrypt sensitive fields if encryptor is configured
+        if self._encryptor is not None:
+            payload = self._encryptor.encrypt_payload(payload)
+
         await self._client.upsert(
             collection_name=LONG_TERM_MEMORY_COLLECTION,
             points=[
@@ -140,7 +173,12 @@ class QdrantMemory:
             ],
         )
 
-        log.info("memory_stored", memory_id=memory_id, type=memory_type)
+        log.info(
+            "memory_stored",
+            memory_id=memory_id,
+            type=memory_type,
+            encrypted=self._encryptor is not None,
+        )
         return memory_id
 
     async def search_conversations(
@@ -179,14 +217,20 @@ class QdrantMemory:
             limit=limit,
         )
 
-        return [
-            {
-                "id": str(hit.id),
-                "score": hit.score,
-                **(hit.payload or {}),
-            }
-            for hit in results
-        ]
+        output = []
+        for hit in results:
+            payload = hit.payload or {}
+            # Decrypt sensitive fields if encryptor is configured
+            if self._encryptor is not None:
+                payload = self._encryptor.decrypt_payload(payload)
+            output.append(
+                {
+                    "id": str(hit.id),
+                    "score": hit.score,
+                    **payload,
+                }
+            )
+        return output
 
     async def search_memories(
         self,
@@ -224,14 +268,20 @@ class QdrantMemory:
             limit=limit,
         )
 
-        return [
-            {
-                "id": str(hit.id),
-                "score": hit.score,
-                **(hit.payload or {}),
-            }
-            for hit in results
-        ]
+        output = []
+        for hit in results:
+            payload = hit.payload or {}
+            # Decrypt sensitive fields if encryptor is configured
+            if self._encryptor is not None:
+                payload = self._encryptor.decrypt_payload(payload)
+            output.append(
+                {
+                    "id": str(hit.id),
+                    "score": hit.score,
+                    **payload,
+                }
+            )
+        return output
 
     async def get_recent_context(
         self,
@@ -268,13 +318,18 @@ class QdrantMemory:
             with_vectors=False,
         )
 
-        messages = [
-            {
-                "id": str(point.id),
-                **(point.payload or {}),
-            }
-            for point in results[0]
-        ]
+        messages = []
+        for point in results[0]:
+            payload = point.payload or {}
+            # Decrypt sensitive fields if encryptor is configured
+            if self._encryptor is not None:
+                payload = self._encryptor.decrypt_payload(payload)
+            messages.append(
+                {
+                    "id": str(point.id),
+                    **payload,
+                }
+            )
 
         # Sort by timestamp
         messages.sort(key=lambda m: m.get("timestamp", ""))

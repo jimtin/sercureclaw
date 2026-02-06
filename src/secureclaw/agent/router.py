@@ -47,7 +47,18 @@ class RoutingDecision:
     intent: MessageIntent
     confidence: float
     reasoning: str
-    use_claude: bool  # Whether to use Claude (expensive) or Flash (cheap)
+    use_claude: (
+        bool  # Whether to use a complex model (Claude/OpenAI) vs lightweight (Gemini/Ollama)
+    )
+
+    @property
+    def requires_complex_model(self) -> bool:
+        """Check if this routing requires a complex model.
+
+        Returns:
+            True if Claude or OpenAI should be used, False for lightweight models.
+        """
+        return self.use_claude
 
 
 ROUTER_PROMPT = """You are a message router. Classify the user's message into one of these intents:
