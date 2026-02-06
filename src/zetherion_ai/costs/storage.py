@@ -220,7 +220,11 @@ class CostStorage:
             SELECT * FROM usage
             WHERE timestamp >= ? AND timestamp <= ?
         """
-        params: list[Any] = [start_date.isoformat(), end_date.isoformat()]
+        # Use SQLite-compatible format (no 'T' separator, no microseconds)
+        params: list[Any] = [
+            start_date.strftime("%Y-%m-%d %H:%M:%S"),
+            end_date.strftime("%Y-%m-%d %H:%M:%S"),
+        ]
 
         if provider:
             query += " AND provider = ?"
@@ -287,7 +291,10 @@ class CostStorage:
                 WHERE timestamp >= ? AND timestamp <= ?
                 GROUP BY provider
                 """,
-                (start_date.isoformat(), end_date.isoformat()),
+                (
+                    start_date.strftime("%Y-%m-%d %H:%M:%S"),
+                    end_date.strftime("%Y-%m-%d %H:%M:%S"),
+                ),
             )
             rows = cursor.fetchall()
 
@@ -312,14 +319,14 @@ class CostStorage:
 
         if start_date:
             query += " WHERE timestamp >= ?"
-            params.append(start_date.isoformat())
+            params.append(start_date.strftime("%Y-%m-%d %H:%M:%S"))
 
         if end_date:
             if start_date:
                 query += " AND timestamp <= ?"
             else:
                 query += " WHERE timestamp <= ?"
-            params.append(end_date.isoformat())
+            params.append(end_date.strftime("%Y-%m-%d %H:%M:%S"))
 
         with self._get_connection() as conn:
             cursor = conn.execute(query, params)
@@ -348,7 +355,11 @@ class CostStorage:
             WHERE timestamp >= ? AND timestamp <= ?
             AND rate_limit_hit = TRUE
         """
-        params: list[Any] = [start_date.isoformat(), end_date.isoformat()]
+        # Use SQLite-compatible format (no 'T' separator, no microseconds)
+        params: list[Any] = [
+            start_date.strftime("%Y-%m-%d %H:%M:%S"),
+            end_date.strftime("%Y-%m-%d %H:%M:%S"),
+        ]
 
         if provider:
             query += " AND provider = ?"

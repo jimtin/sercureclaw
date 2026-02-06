@@ -1,4 +1,4 @@
-"""Pytest fixtures for SecureClaw tests."""
+"""Pytest fixtures for Zetherion AI tests."""
 
 import os
 from unittest.mock import AsyncMock, MagicMock, Mock
@@ -18,6 +18,8 @@ def setup_test_environment():
     os.environ.setdefault("GEMINI_API_KEY", "test-gemini-key-placeholder")
     # Encryption passphrase required when encryption_enabled=True (now default)
     os.environ.setdefault("ENCRYPTION_PASSPHRASE", "test-encryption-passphrase-for-unit-tests")
+    # Disable InferenceBroker by default to avoid network calls in tests
+    os.environ.setdefault("INFERENCE_BROKER_ENABLED", "false")
 
     # Clear the settings cache to ensure tests start fresh
     from zetherion_ai.config import get_settings

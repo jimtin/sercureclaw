@@ -499,7 +499,7 @@ class TestClaudeResponseGeneration:
         call_args = mock_claude_client.messages.create.call_args
         assert call_args.kwargs["model"] == "claude-sonnet-4-5-20250929"
         assert call_args.kwargs["max_tokens"] == 2048
-        assert "SecureClaw" in call_args.kwargs["system"]
+        assert "Zetherion" in call_args.kwargs["system"]
         assert "Relevant Memories" in call_args.kwargs["system"]
 
     @pytest.mark.asyncio
@@ -679,6 +679,7 @@ class TestFallbackToGeminiFlash:
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
         monkeypatch.setenv("ANTHROPIC_API_KEY", "")  # Empty string to ensure no key
         monkeypatch.setenv("OPENAI_API_KEY", "")  # Empty string to ensure no key
+        monkeypatch.setenv("INFERENCE_BROKER_ENABLED", "false")  # Disable to avoid network calls
 
         # Force settings reload
         from zetherion_ai.config import get_settings
@@ -867,7 +868,7 @@ class TestSystemCommandHandler:
         """Test help command response."""
         response = await agent._handle_system_command("help")
 
-        assert "SecureClaw" in response
+        assert "Zetherion" in response
         assert "Chat & Questions" in response
         assert "Memory" in response
         assert "Commands" in response
@@ -877,7 +878,7 @@ class TestSystemCommandHandler:
         """Test 'what can you do' response."""
         response = await agent._handle_system_command("What can you do?")
 
-        assert "SecureClaw" in response
+        assert "Zetherion" in response
         assert "Commands" in response
 
     @pytest.mark.asyncio
@@ -898,6 +899,7 @@ class TestGenerateResponse:
         monkeypatch.setenv("DISCORD_TOKEN", "test")
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
         monkeypatch.setenv("ANTHROPIC_API_KEY", "test-anthropic-key")
+        monkeypatch.setenv("INFERENCE_BROKER_ENABLED", "false")  # Disable to avoid network calls
 
         with (
             patch("zetherion_ai.memory.qdrant.AsyncQdrantClient", return_value=mock_qdrant_client),
@@ -1018,7 +1020,7 @@ class TestGenerateResponse:
             message="help",
         )
 
-        assert "SecureClaw" in response
+        assert "Zetherion" in response
         assert "Commands" in response
 
     @pytest.mark.asyncio
