@@ -1,4 +1,4 @@
-"""Key derivation and salt management for SecureClaw encryption.
+"""Key derivation and salt management for Zetherion AI encryption.
 
 Uses PBKDF2-HMAC-SHA256 to derive a 256-bit encryption key from a
 user-provided passphrase. The salt is generated once and persisted

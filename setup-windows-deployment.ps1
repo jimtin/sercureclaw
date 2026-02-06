@@ -1,11 +1,11 @@
-# SecureClaw Windows Deployment Setup Script
+# Zetherion AI Windows Deployment Setup Script
 # This script automates the entire setup process for Windows deployment
 # Run as Administrator: powershell -ExecutionPolicy Bypass -File setup-windows-deployment.ps1
 
 #Requires -RunAsAdministrator
 
 param(
-    [string]$DeploymentPath = "C:\SecureClaw",
+    [string]$DeploymentPath = "C:\ZetherionAI",
     [int]$PollIntervalMinutes = 5,
     [switch]$AutoStart = $false
 )
@@ -15,7 +15,7 @@ $ErrorActionPreference = "Stop"
 Write-Host @"
 ================================================================
 
-     SecureClaw Windows Deployment Setup
+     Zetherion AI Windows Deployment Setup
      Automated Installation & Configuration
 
 ================================================================
@@ -24,7 +24,7 @@ Write-Host @"
 Write-Output ""
 Write-Output "This script will:"
 Write-Output "  1. Verify prerequisites (Docker, Git, GitHub CLI)"
-Write-Output "  2. Clone the SecureClaw repository"
+Write-Output "  2. Clone the Zetherion AI repository"
 Write-Output "  3. Set up environment configuration"
 Write-Output "  4. Create deployment scripts"
 Write-Output "  5. Configure auto-deployment polling (every $PollIntervalMinutes minutes)"
@@ -162,7 +162,7 @@ if (Test-Path $DeploymentPath) {
 # Clone repository
 Set-Location $DeploymentPath
 if (-not (Test-Path ".git")) {
-    git clone https://github.com/jimtin/sercureclaw.git .
+    git clone https://github.com/jimtin/zetherion-ai.git .
 } else {
     git pull origin main
 }
@@ -200,14 +200,14 @@ Write-Host "[STEP 4] Creating deployment scripts..." -ForegroundColor Cyan
 
 # Create deploy-windows.ps1
 $deployScript = @'
-# deploy-windows.ps1 - SecureClaw deployment script for Windows
+# deploy-windows.ps1 - Zetherion AI deployment script for Windows
 param(
     [switch]$SkipBackup = $false,
     [switch]$NoBuild = $false
 )
 
-Write-Host "[DEPLOY] SecureClaw Deployment" -ForegroundColor Cyan
-Write-Host "==============================" -ForegroundColor Cyan
+Write-Host "[DEPLOY] Zetherion AI Deployment" -ForegroundColor Cyan
+Write-Host "=================================" -ForegroundColor Cyan
 
 # Check if Docker is running
 try {
@@ -260,7 +260,7 @@ Set-Content -Path "deploy-windows.ps1" -Value $deployScript
 
 # Create start.ps1
 $startScript = @'
-# start.ps1 - Start SecureClaw containers
+# start.ps1 - Start Zetherion AI containers
 docker-compose up -d
 Write-Host "[OK] Containers started" -ForegroundColor Green
 docker-compose ps
@@ -270,7 +270,7 @@ Set-Content -Path "start.ps1" -Value $startScript
 
 # Create stop.ps1
 $stopScript = @'
-# stop.ps1 - Stop SecureClaw containers
+# stop.ps1 - Stop Zetherion AI containers
 docker-compose down --timeout 30
 Write-Host "[OK] Containers stopped" -ForegroundColor Green
 '@
@@ -279,8 +279,8 @@ Set-Content -Path "stop.ps1" -Value $stopScript
 
 # Create logs.ps1
 $logsScript = @'
-# logs.ps1 - View SecureClaw logs
-docker-compose logs -f secureclaw
+# logs.ps1 - View Zetherion AI logs
+docker-compose logs -f zetherion-ai-bot
 '@
 
 Set-Content -Path "logs.ps1" -Value $logsScript
@@ -412,7 +412,7 @@ if ($AutoStart) {
     $taskSettings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 
     try {
-        Register-ScheduledTask -TaskName "SecureClaw-AutoDeploy" -Action $taskAction -Trigger $taskTrigger -Principal $taskPrincipal -Settings $taskSettings -Force | Out-Null
+        Register-ScheduledTask -TaskName "ZetherionAI-AutoDeploy" -Action $taskAction -Trigger $taskTrigger -Principal $taskPrincipal -Settings $taskSettings -Force | Out-Null
         Write-Host "[OK] Created auto-deploy scheduled task" -ForegroundColor Green
         Write-Output "The deployment monitor will start automatically on system boot."
     } catch {

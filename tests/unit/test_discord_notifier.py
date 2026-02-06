@@ -339,4 +339,4 @@ class TestDiscordNotifierCreateEmbed:
         embed = notifier._create_embed(sample_notification)
 
         assert embed.footer is not None
-        assert "SecureClaw" in embed.footer.text
+        assert "Zetherion AI" in embed.footer.text

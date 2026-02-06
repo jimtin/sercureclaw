@@ -1,9 +1,9 @@
-"""Main entry point for SecureClaw."""
+"""Main entry point for Zetherion AI."""
 
 import asyncio
 
 from zetherion_ai.config import get_settings
-from zetherion_ai.discord.bot import SecureClawBot
+from zetherion_ai.discord.bot import ZetherionAIBot
 from zetherion_ai.logging import get_logger, setup_logging
 from zetherion_ai.memory.qdrant import QdrantMemory
 
@@ -25,7 +25,7 @@ async def main() -> None:
     await memory.initialize()
 
     # Initialize and run the Discord bot
-    bot = SecureClawBot(memory=memory)
+    bot = ZetherionAIBot(memory=memory)
 
     try:
         await bot.start(settings.discord_token.get_secret_value())

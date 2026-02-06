@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import discord
 import pytest
 
-from zetherion_ai.discord.bot import SecureClawBot
+from zetherion_ai.discord.bot import ZetherionAIBot
 from zetherion_ai.memory.qdrant import QdrantMemory
 
 
@@ -30,11 +30,11 @@ def mock_agent():
 @pytest.fixture
 def bot(mock_memory):
     """Create a bot instance with mocked memory."""
-    bot = SecureClawBot(memory=mock_memory)
+    bot = ZetherionAIBot(memory=mock_memory)
     # Mock the bot user via _connection.user (the underlying attribute)
     mock_user = MagicMock(spec=discord.ClientUser)
     mock_user.id = 999999999
-    mock_user.name = "SecureClawBot"
+    mock_user.name = "ZetherionAIBot"
     bot._connection.user = mock_user
     # Mock the command tree sync method
     bot._tree.sync = AsyncMock()
@@ -91,7 +91,7 @@ class TestBotInitialization:
 
     def test_bot_init(self, mock_memory):
         """Test bot initializes correctly."""
-        bot = SecureClawBot(memory=mock_memory)
+        bot = ZetherionAIBot(memory=mock_memory)
 
         assert bot._memory == mock_memory
         assert bot._agent is None  # Agent initialized in setup_hook

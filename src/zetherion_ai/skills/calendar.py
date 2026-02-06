@@ -1,4 +1,4 @@
-"""Calendar Awareness Skill for SecureClaw.
+"""Calendar Awareness Skill for Zetherion AI.
 
 Provides calendar and schedule awareness capabilities:
 - Track known schedule patterns (work hours, recurring meetings)

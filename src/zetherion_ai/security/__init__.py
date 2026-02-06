@@ -1,4 +1,4 @@
-"""Security module for SecureClaw.
+"""Security module for Zetherion AI.
 
 Provides application-layer encryption for sensitive data stored in Qdrant.
 """

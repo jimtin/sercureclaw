@@ -1,1 +1,1 @@
-"""Integration tests for SecureClaw."""
+"""Integration tests for Zetherion AI."""

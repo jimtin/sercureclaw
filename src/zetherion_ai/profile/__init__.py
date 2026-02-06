@@ -1,4 +1,4 @@
-"""User profile system for SecureClaw.
+"""User profile system for Zetherion AI.
 
 This package provides:
 - ProfileEntry and ProfileCategory for structured user knowledge

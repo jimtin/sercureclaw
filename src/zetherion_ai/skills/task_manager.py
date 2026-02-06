@@ -1,4 +1,4 @@
-"""Task Manager Skill for SecureClaw.
+"""Task Manager Skill for Zetherion AI.
 
 Provides task and project management capabilities:
 - Create, update, complete, and delete tasks

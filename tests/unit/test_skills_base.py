@@ -87,14 +87,14 @@ class TestSkillRequest:
             "user_id": "user456",
             "intent": "list_tasks",
             "message": "Show my tasks",
-            "context": {"project": "SecureClaw"},
+            "context": {"project": "Zetherion AI"},
             "timestamp": "2026-02-06T14:30:00",
         }
         req = SkillRequest.from_dict(data)
         assert req.user_id == "user456"
         assert req.intent == "list_tasks"
         assert req.message == "Show my tasks"
-        assert req.context == {"project": "SecureClaw"}
+        assert req.context == {"project": "Zetherion AI"}
         assert req.timestamp == datetime(2026, 2, 6, 14, 30)
 
     def test_from_dict_minimal(self) -> None:
@@ -248,7 +248,7 @@ class TestSkillMetadata:
         assert meta.name == "test_skill"
         assert meta.description == "A test skill"
         assert meta.version == "1.0.0"
-        assert meta.author == "SecureClaw"
+        assert meta.author == "Zetherion AI"
         assert len(meta.permissions) == 0
         assert meta.collections == []
         assert meta.intents == []

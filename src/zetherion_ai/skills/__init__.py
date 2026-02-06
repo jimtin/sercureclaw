@@ -1,4 +1,4 @@
-"""Skills framework for SecureClaw.
+"""Skills framework for Zetherion AI.
 
 This package provides:
 - Abstract Skill interface for building modular capabilities

@@ -1,4 +1,4 @@
-"""Configuration management for SecureClaw."""
+"""Configuration management for Zetherion AI."""
 
 from functools import lru_cache
 from typing import Self

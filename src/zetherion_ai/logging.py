@@ -1,4 +1,4 @@
-"""Logging configuration for SecureClaw."""
+"""Logging configuration for Zetherion AI."""
 
 import logging
 import sys

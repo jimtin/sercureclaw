@@ -16,8 +16,8 @@ from zetherion_ai.memory.qdrant import QdrantMemory
 log = get_logger("zetherion_ai.discord.bot")
 
 
-class SecureClawBot(discord.Client):
-    """SecureClaw Discord bot."""
+class ZetherionAIBot(discord.Client):
+    """Zetherion AI Discord bot."""
 
     def __init__(self, memory: QdrantMemory) -> None:
         """Initialize the bot.
@@ -42,13 +42,13 @@ class SecureClawBot(discord.Client):
     def _setup_commands(self) -> None:
         """Set up slash commands."""
 
-        @self._tree.command(name="ask", description="Ask SecureClaw a question")
+        @self._tree.command(name="ask", description="Ask Zetherion AI a question")
         async def ask_command(
             interaction: discord.Interaction[discord.Client], question: str
         ) -> None:
             await self._handle_ask(interaction, question)
 
-        @self._tree.command(name="remember", description="Ask SecureClaw to remember something")
+        @self._tree.command(name="remember", description="Ask Zetherion AI to remember something")
         async def remember_command(
             interaction: discord.Interaction[discord.Client], content: str
         ) -> None:
@@ -60,14 +60,14 @@ class SecureClawBot(discord.Client):
         ) -> None:
             await self._handle_search(interaction, query)
 
-        @self._tree.command(name="ping", description="Check if SecureClaw is online")
+        @self._tree.command(name="ping", description="Check if Zetherion AI is online")
         async def ping_command(interaction: discord.Interaction[discord.Client]) -> None:
             await interaction.response.send_message(
                 f"🦀 Pong! Latency: {round(self.latency * 1000)}ms",
                 ephemeral=True,
             )
 
-        @self._tree.command(name="channels", description="List channels SecureClaw can access")
+        @self._tree.command(name="channels", description="List channels Zetherion AI can access")
         async def channels_command(interaction: discord.Interaction[discord.Client]) -> None:
             await self._handle_channels(interaction)
 

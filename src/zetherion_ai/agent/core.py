@@ -799,7 +799,7 @@ Summarize what I know about this in a helpful, conversational way."""
         lower_msg = message.lower().strip()
 
         if "help" in lower_msg or "what can you do" in lower_msg:
-            return """Hi! I'm SecureClaw, your personal AI assistant. Here's what I can do:
+            return """Hi! I'm Zetherion, your personal AI assistant. Here's what I can do:
 
 **Chat & Questions**
 - Ask me anything - simple questions use fast responses, complex tasks get deeper analysis

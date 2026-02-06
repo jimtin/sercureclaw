@@ -1,4 +1,4 @@
-"""SecureClaw main module entry point."""
+"""Zetherion AI main module entry point."""
 
 from zetherion_ai.main import run
 

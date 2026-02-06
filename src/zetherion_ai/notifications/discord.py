@@ -266,6 +266,6 @@ class DiscordNotifier(NotificationChannel):
                     inline=True,
                 )
 
-        embed.set_footer(text="SecureClaw Cost Tracker")
+        embed.set_footer(text="Zetherion AI Cost Tracker")
 
         return embed

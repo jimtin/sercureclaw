@@ -6,8 +6,8 @@ import discord
 import pytest
 
 
-class TestSecureClawBot:
-    """Tests for SecureClawBot class."""
+class TestZetherionAIBot:
+    """Tests for ZetherionAIBot class."""
 
     @pytest.fixture
     def mock_memory(self):
@@ -18,14 +18,14 @@ class TestSecureClawBot:
 
     @pytest.fixture
     def bot(self, mock_memory):
-        """Create SecureClawBot instance with mocked dependencies."""
+        """Create ZetherionAIBot instance with mocked dependencies."""
         with (
             patch("zetherion_ai.discord.bot.RateLimiter"),
             patch("zetherion_ai.discord.bot.UserAllowlist"),
         ):
-            from zetherion_ai.discord.bot import SecureClawBot
+            from zetherion_ai.discord.bot import ZetherionAIBot
 
-            bot = SecureClawBot(memory=mock_memory)
+            bot = ZetherionAIBot(memory=mock_memory)
             bot._agent = AsyncMock()
             bot._agent.generate_response = AsyncMock(return_value="Test response")
             bot._agent.store_memory_from_request = AsyncMock(return_value="Memory stored")
@@ -33,7 +33,7 @@ class TestSecureClawBot:
             # Mock the bot user via _connection.user
             mock_user = MagicMock(spec=discord.ClientUser)
             mock_user.id = 999999999
-            mock_user.name = "SecureClawBot"
+            mock_user.name = "ZetherionAIBot"
             bot._connection.user = mock_user
 
             # Mock command tree sync
@@ -52,9 +52,9 @@ class TestSecureClawBot:
             patch("zetherion_ai.discord.bot.RateLimiter"),
             patch("zetherion_ai.discord.bot.UserAllowlist"),
         ):
-            from zetherion_ai.discord.bot import SecureClawBot
+            from zetherion_ai.discord.bot import ZetherionAIBot
 
-            bot = SecureClawBot(memory=mock_memory)
+            bot = ZetherionAIBot(memory=mock_memory)
 
             assert bot._memory == mock_memory
             assert bot._agent is None  # Not initialized until setup_hook

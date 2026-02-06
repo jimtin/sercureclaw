@@ -151,7 +151,7 @@ class SkillMetadata:
     name: str
     description: str
     version: str
-    author: str = "SecureClaw"
+    author: str = "Zetherion AI"
     permissions: PermissionSet = field(default_factory=PermissionSet)
     collections: list[str] = field(default_factory=list)  # Qdrant collections used
     intents: list[str] = field(default_factory=list)  # Intents this skill handles
@@ -175,7 +175,7 @@ class SkillMetadata:
             name=data["name"],
             description=data["description"],
             version=data["version"],
-            author=data.get("author", "SecureClaw"),
+            author=data.get("author", "Zetherion AI"),
             permissions=PermissionSet.from_list(data.get("permissions", [])),
             collections=data.get("collections", []),
             intents=data.get("intents", []),

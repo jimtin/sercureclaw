@@ -188,7 +188,7 @@ class DiscordTestClient:
         return await self.channel.send(content)
 
     def get_zetherion_ai_bot_id(self) -> int | None:
-        """Get the SecureClaw production bot's user ID.
+        """Get the Zetherion AI production bot's user ID.
 
         Returns:
             Bot user ID, or None if not found.
@@ -196,7 +196,7 @@ class DiscordTestClient:
         if not self.client or not self.channel:
             return None
 
-        # Look for SecureClaw bot in guild (excluding ourselves, the test bot)
+        # Look for Zetherion AI bot in guild (excluding ourselves, the test bot)
         if isinstance(self.channel, discord.TextChannel) and self.channel.guild:
             for member in self.channel.guild.members:
                 if (
@@ -204,7 +204,7 @@ class DiscordTestClient:
                     and member.id != self.client.user.id  # type: ignore[union-attr]
                     and "zetherion_ai" in member.name.lower()
                 ):
-                    print(f"Found SecureClaw bot: {member.name} (ID: {member.id})")
+                    print(f"Found Zetherion AI bot: {member.name} (ID: {member.id})")
                     return member.id
 
         return None
@@ -240,7 +240,7 @@ class DiscordTestClient:
                         break
 
             if not bot_id:
-                raise RuntimeError("Could not identify SecureClaw bot in channel or guild")
+                raise RuntimeError("Could not identify Zetherion AI bot in channel or guild")
 
         # Wait for bot response
         def check(message: discord.Message) -> bool:
@@ -295,7 +295,7 @@ async def test_bot_responds_to_message(discord_test_client: DiscordTestClient) -
     # Get bot ID to mention it
     bot_id = discord_test_client.get_zetherion_ai_bot_id()
     if not bot_id:
-        pytest.skip("Could not find SecureClaw bot in channel")
+        pytest.skip("Could not find Zetherion AI bot in channel")
 
     # Send test message with @mention
     test_message = await discord_test_client.send_message(f"<@{bot_id}> Hello, what is 2+2?")
@@ -326,7 +326,7 @@ async def test_bot_handles_complex_query(discord_test_client: DiscordTestClient)
     # Get bot ID to mention it
     bot_id = discord_test_client.get_zetherion_ai_bot_id()
     if not bot_id:
-        pytest.skip("Could not find SecureClaw bot in channel")
+        pytest.skip("Could not find Zetherion AI bot in channel")
 
     test_message = await discord_test_client.send_message(
         f"<@{bot_id}> Can you explain what async/await is in Python?"
@@ -356,7 +356,7 @@ async def test_bot_remembers_information(discord_test_client: DiscordTestClient)
     # Get bot ID to mention it
     bot_id = discord_test_client.get_zetherion_ai_bot_id()
     if not bot_id:
-        pytest.skip("Could not find SecureClaw bot in channel")
+        pytest.skip("Could not find Zetherion AI bot in channel")
 
     # Store memory
     store_message = await discord_test_client.send_message(
@@ -411,7 +411,7 @@ async def test_bot_handles_mention(discord_test_client: DiscordTestClient) -> No
     # Get bot ID to mention it
     bot_id = discord_test_client.get_zetherion_ai_bot_id()
     if not bot_id:
-        pytest.skip("Could not find SecureClaw bot in channel")
+        pytest.skip("Could not find Zetherion AI bot in channel")
 
     # Send message with mention
     test_message = await discord_test_client.send_message(f"<@{bot_id}> ping")

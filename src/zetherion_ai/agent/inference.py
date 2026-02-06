@@ -79,7 +79,7 @@ COST_PER_MILLION_TOKENS: dict[Provider, tuple[float, float]] = {
 class InferenceBroker:
     """Central LLM dispatch with smart provider selection.
 
-    All LLM calls in SecureClaw flow through this broker, which:
+    All LLM calls in Zetherion AI flow through this broker, which:
     - Selects the optimal provider for each task type
     - Handles fallback when providers are unavailable
     - Tracks costs and usage per provider
