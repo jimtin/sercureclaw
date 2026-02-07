@@ -1664,31 +1664,38 @@
 - Located at: <code>~/Library/Group Containers/group.com.docker/settings.json</code>
 - The <code>memoryMiB</code> field controls how much RAM the VM gets</p>
 <p><strong>Think of it like this:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│   Your Mac (Physical Hardware)      │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   Total RAM: e.g., 16GB             │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│                                      │
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  ┌────────────────────────────────┐ │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  │  Docker Desktop VM             │ │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│  │  Allocated: e.g., 8GB          │ │
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  │                                │ │
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│  │  ┌──────────────────────────┐ │ │
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│  │  │  Container 1 (Bot)       │ │ │
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│  │  │  Limit: 2GB              │ │ │
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│  │  └──────────────────────────┘ │ │
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│  │                                │ │
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  │  ┌──────────────────────────┐ │ │
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│  │  │  Container 2 (Ollama)    │ │ │
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  │  │  Limit: 10GB             │ │ │
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│  │  └──────────────────────────┘ │ │
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│  │                                │ │
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│  │  ┌──────────────────────────┐ │ │
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│  │  │  Container 3 (Qdrant)    │ │ │
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>│  │  │  Limit: 1GB              │ │ │
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>│  │  └──────────────────────────┘ │ │
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>│  └────────────────────────────────┘ │
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>└─────────────────────────────────────┘
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌──────────────────────────────────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│   Your Mac (Physical Hardware)                    │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   Total RAM: e.g., 16GB                           │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│                                                   │
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  ┌─────────────────────────────────────────────┐ │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  │  Docker Desktop VM                           │ │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│  │  Allocated: e.g., 12GB                       │ │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  │                                              │ │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│  │  ┌─────────────────────────────────────────┐│ │
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│  │  │  Container 1 (Bot)           Limit: 2GB ││ │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│  │  └─────────────────────────────────────────┘│ │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│  │                                              │ │
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│  │  ┌─────────────────────────────────────────┐│ │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  │  │  Container 2 (ollama-router) Limit: 1GB ││ │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│  │  │  [qwen2.5:0.5b - always loaded]         ││ │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  │  └─────────────────────────────────────────┘│ │
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│  │                                              │ │
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│  │  ┌─────────────────────────────────────────┐│ │
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│  │  │  Container 3 (ollama)        Limit: 8GB ││ │
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│  │  │  [qwen2.5:7b + nomic-embed-text]        ││ │
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>│  │  └─────────────────────────────────────────┘│ │
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>│  │                                              │ │
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>│  │  ┌─────────────────────────────────────────┐│ │
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>│  │  │  Container 4 (Qdrant)        Limit: 1GB ││ │
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>│  │  └─────────────────────────────────────────┘│ │
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>│  └─────────────────────────────────────────────┘ │
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>└──────────────────────────────────────────────────┘
 </code></pre></div></p>
+<p><strong>Note</strong>: When using Ollama backend, Zetherion AI uses <strong>two separate Ollama containers</strong>:
+- <strong>ollama-router</strong>: Dedicated for fast message routing (small model, always loaded)
+- <strong>ollama</strong>: For generation and embeddings (larger model, always loaded)</p>
+<p>This dual-container architecture eliminates model-swapping delays (2-10 seconds per swap).</p>
 <h3 id="docker-containers">Docker Containers<a class="headerlink" href="#docker-containers" title="Permanent link">&para;</a></h3>
 <p><strong>Containers</strong> are isolated processes that run <strong>inside</strong> the Docker Desktop VM.</p>
 <p><strong>Key points:</strong>
@@ -1808,69 +1815,42 @@
 <a id="__codelineno-3-34" name="__codelineno-3-34" href="#__codelineno-3-34"></a>└─────────────────────────────────────────────────────────────┘
 </code></pre></div>
 <h3 id="model-recommendations-with-memory-requirements">Model Recommendations with Memory Requirements<a class="headerlink" href="#model-recommendations-with-memory-requirements" title="Permanent link">&para;</a></h3>
-<p>The system recommends models based on your hardware:</p>
-<table>
-<thead>
-<tr>
-<th>Model</th>
-<th>Size</th>
-<th>RAM Req</th>
-<th>Docker Memory</th>
-<th>Speed (CPU)</th>
-<th>Quality</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>phi3:mini</td>
-<td>2.3GB</td>
-<td>4GB</td>
-<td>5GB</td>
-<td>~1s</td>
-<td>Basic</td>
-</tr>
-<tr>
-<td>llama3.1:8b</td>
-<td>4.7GB</td>
-<td>8GB</td>
-<td>8GB</td>
-<td>~2-3s</td>
-<td>Excellent</td>
-</tr>
-<tr>
-<td>qwen2.5:7b</td>
-<td>4.7GB</td>
-<td>8GB</td>
-<td>10GB</td>
-<td>~2-3s</td>
-<td>Best</td>
-</tr>
-<tr>
-<td>mistral:7b</td>
-<td>4.1GB</td>
-<td>8GB</td>
-<td>7GB</td>
-<td>~1-2s</td>
-<td>Very Good</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Docker Memory = Model Size + Overhead</strong>
-- Phi3: 2.3GB + 2GB overhead = 5GB
-- Llama3.1: 4.7GB + 3GB overhead = 8GB
-- Qwen2.5: 4.7GB + 5GB overhead = 10GB (needs more for quality)
-- Mistral: 4.1GB + 3GB overhead = 7GB</p>
+<p>The system recommends models based on your hardware. When using Ollama, <strong>two containers</strong> are used:</p>
+<p><strong>Router Container (ollama-router)</strong> - Fixed at 1GB:
+| Model         | Size   | Purpose              |
+|---------------|--------|----------------------|
+| qwen2.5:0.5b  | 500MB  | Message routing      |
+| llama3.2:1b   | 1.3GB  | Alternative (better) |</p>
+<p><strong>Generation Container (ollama)</strong> - Variable based on model:
+| Model         | Size  | RAM Req | Docker Memory | Speed (CPU)   | Quality    |
+|---------------|-------|---------|---------------|---------------|------------|
+| qwen2.5:3b    | 2.0GB | 4GB     | 4GB           | ~1s           | Good       |
+| qwen2.5:7b    | 4.7GB | 8GB     | 8GB           | ~2-3s         | Excellent  |
+| qwen2.5:14b   | 9.0GB | 12GB    | 12GB          | ~3-4s         | Best       |
+| llama3.1:8b   | 4.7GB | 8GB     | 8GB           | ~2-3s         | Very Good  |</p>
+<p><strong>Total Docker Memory = Router (1GB) + Generation (varies)</strong>
+- Example: qwen2.5:7b → 1GB (router) + 8GB (generation) = 9GB total
+- Example: qwen2.5:14b → 1GB (router) + 12GB (generation) = 13GB total</p>
 <h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
-<p>The system manages these automatically:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Set by assess-system.py</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">OLLAMA_ROUTER_MODEL</span><span class="o">=</span>llama3.1:8b
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nv">OLLAMA_DOCKER_MEMORY</span><span class="o">=</span><span class="m">8</span><span class="w">  </span><span class="c1"># in GB</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Used by start.sh</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nv">REQUIRED_MEMORY</span><span class="o">=</span><span class="si">${</span><span class="nv">OLLAMA_DOCKER_MEMORY</span><span class="k">:-</span><span class="nv">8</span><span class="si">}</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># Used by Docker Compose</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nv">OLLAMA_DOCKER_MEMORY</span><span class="o">=</span><span class="m">8</span><span class="w">  </span><span class="c1"># for container limits</span>
+<p>The system manages these automatically for the <strong>dual-container architecture</strong>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Set by assess-system.py for Router Container (ollama-router)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">OLLAMA_ROUTER_HOST</span><span class="o">=</span>ollama-router
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nv">OLLAMA_ROUTER_PORT</span><span class="o">=</span><span class="m">11434</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nv">OLLAMA_ROUTER_MODEL</span><span class="o">=</span>qwen2.5:0.5b
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Set by assess-system.py for Generation Container (ollama)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nv">OLLAMA_HOST</span><span class="o">=</span>ollama
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nv">OLLAMA_PORT</span><span class="o">=</span><span class="m">11434</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nv">OLLAMA_GENERATION_MODEL</span><span class="o">=</span>qwen2.5:7b
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="nv">OLLAMA_EMBEDDING_MODEL</span><span class="o">=</span>nomic-embed-text
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nv">OLLAMA_DOCKER_MEMORY</span><span class="o">=</span><span class="m">8</span><span class="w">  </span><span class="c1"># in GB (for generation container)</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Used by start.sh (total = router 1GB + generation)</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="nv">REQUIRED_MEMORY</span><span class="o">=</span><span class="k">$((</span><span class="m">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="si">${</span><span class="nv">OLLAMA_DOCKER_MEMORY</span><span class="k">:-</span><span class="nv">8</span><span class="si">}</span><span class="k">))</span><span class="w">  </span><span class="c1"># e.g., 9GB total</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="c1"># Used by Docker Compose</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1"># ollama-router: Fixed 1GB limit</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="c1"># ollama: OLLAMA_DOCKER_MEMORY limit</span>
 </code></pre></div>
 <h3 id="process-control">Process Control<a class="headerlink" href="#process-control" title="Permanent link">&para;</a></h3>
 <p>The memory increase script uses robust process management:</p>

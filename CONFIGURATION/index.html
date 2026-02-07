@@ -852,6 +852,39 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dual-ollama-container-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dual Ollama Container Architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ollama_router_host" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OLLAMA_ROUTER_HOST
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ollama_router_port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OLLAMA_ROUTER_PORT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ollama_router_model" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -874,10 +907,54 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#ollama_port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OLLAMA_PORT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ollama_generation_model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OLLAMA_GENERATION_MODEL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ollama_embedding_model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OLLAMA_EMBEDDING_MODEL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ollama_docker_memory" class="md-nav__link">
     <span class="md-ellipsis">
       
         OLLAMA_DOCKER_MEMORY
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ollama_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OLLAMA_TIMEOUT
       
     </span>
   </a>
@@ -1547,17 +1624,100 @@
 - Privacy-conscious users
 - Offline deployments
 - Powerful hardware (16GB+ RAM or GPU)</p>
-<h3 id="ollama_router_model">OLLAMA_ROUTER_MODEL<a class="headerlink" href="#ollama_router_model" title="Permanent link">&para;</a></h3>
-<p><strong>Ollama Model Selection</strong> - Which local model to use for routing (only if <code>ROUTER_BACKEND=ollama</code>).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>OLLAMA_ROUTER_MODEL=llama3.1:8b
+<h3 id="dual-ollama-container-architecture">Dual Ollama Container Architecture<a class="headerlink" href="#dual-ollama-container-architecture" title="Permanent link">&para;</a></h3>
+<p>When using <code>ROUTER_BACKEND=ollama</code>, Zetherion AI uses <strong>two separate Ollama containers</strong> to eliminate model-swapping delays:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>┌────────────────────────┐    ┌────────────────────────┐
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>│  ollama-router         │    │  ollama                │
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>│  ┌──────────────────┐  │    │  ┌──────────────────┐  │
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>│  │  qwen2.5:0.5b    │  │    │  │   qwen2.5:7b     │  │
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>│  │  Always loaded   │  │    │  │  Always loaded   │  │
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>│  └──────────────────┘  │    │  └──────────────────┘  │
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>│  Memory: 1GB           │    │  ┌──────────────────┐  │
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│  Purpose: Routing      │    │  │ nomic-embed-text │  │
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>└────────────────────────┘    │  └──────────────────┘  │
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>                              │  Memory: 8GB           │
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>                              │  Purpose: Generation   │
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>                              └────────────────────────┘
 </code></pre></div>
-<p><strong>Recommended Models</strong> (by hardware):</p>
+<p><strong>Why two containers?</strong>
+- Ollama can only keep ONE model loaded at a time per container
+- Single container = 2-10 second delay when swapping between routing and generation models
+- Dual containers = both models always loaded, instant responses</p>
+<h3 id="ollama_router_host">OLLAMA_ROUTER_HOST<a class="headerlink" href="#ollama_router_host" title="Permanent link">&para;</a></h3>
+<p><strong>Router Container Host</strong> - Dedicated container for fast message classification.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>OLLAMA_ROUTER_HOST=ollama-router  # Docker service name (default)
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a># or
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>OLLAMA_ROUTER_HOST=localhost  # For local development
+</code></pre></div>
+<p><strong>Default</strong>: <code>ollama-router</code> (Docker Compose service name)</p>
+<h3 id="ollama_router_port">OLLAMA_ROUTER_PORT<a class="headerlink" href="#ollama_router_port" title="Permanent link">&para;</a></h3>
+<p><strong>Router Container Port</strong> - API port for the router container.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>OLLAMA_ROUTER_PORT=11434
+</code></pre></div>
+<p><strong>Default</strong>: <code>11434</code> (standard Ollama port)</p>
+<h3 id="ollama_router_model">OLLAMA_ROUTER_MODEL<a class="headerlink" href="#ollama_router_model" title="Permanent link">&para;</a></h3>
+<p><strong>Router Model Selection</strong> - Small, fast model for message classification.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>OLLAMA_ROUTER_MODEL=qwen2.5:0.5b
+</code></pre></div>
+<p><strong>Recommended Router Models:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Size</th>
+<th>Speed</th>
+<th>RAM</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>qwen2.5:0.5b</code></td>
+<td>500MB</td>
+<td>Fastest</td>
+<td>1GB</td>
+<td>Default, good quality</td>
+</tr>
+<tr>
+<td><code>llama3.2:1b</code></td>
+<td>1.3GB</td>
+<td>Fast</td>
+<td>1.5GB</td>
+<td>Better quality</td>
+</tr>
+<tr>
+<td><code>phi3:mini</code></td>
+<td>2.3GB</td>
+<td>Moderate</td>
+<td>2GB</td>
+<td>Best classification</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note:</strong> Router models should be small and fast - quality matters less for classification.</p>
+<h3 id="ollama_host">OLLAMA_HOST<a class="headerlink" href="#ollama_host" title="Permanent link">&para;</a></h3>
+<p><strong>Generation Container Host</strong> - Main container for complex queries and embeddings.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>OLLAMA_HOST=ollama  # Docker service name (default)
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a># or
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>OLLAMA_HOST=localhost  # For local development
+</code></pre></div>
+<p><strong>Default</strong>: <code>ollama</code> (Docker Compose service name)</p>
+<h3 id="ollama_port">OLLAMA_PORT<a class="headerlink" href="#ollama_port" title="Permanent link">&para;</a></h3>
+<p><strong>Generation Container Port</strong> - API port for the generation container.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>OLLAMA_PORT=11434
+</code></pre></div>
+<p><strong>Default</strong>: <code>11434</code> (standard Ollama port)</p>
+<h3 id="ollama_generation_model">OLLAMA_GENERATION_MODEL<a class="headerlink" href="#ollama_generation_model" title="Permanent link">&para;</a></h3>
+<p><strong>Generation Model Selection</strong> - Larger, more capable model for complex queries.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>OLLAMA_GENERATION_MODEL=qwen2.5:7b
+</code></pre></div>
+<p><strong>Recommended Generation Models</strong> (by hardware):</p>
 <table>
 <thead>
 <tr>
 <th>Hardware</th>
 <th>Model</th>
-<th>Docker RAM</th>
+<th>RAM</th>
 <th>Quality</th>
 <th>Speed</th>
 </tr>
@@ -1565,14 +1725,14 @@
 <tbody>
 <tr>
 <td>8GB RAM, CPU</td>
-<td><code>phi3:mini</code></td>
-<td>5GB</td>
+<td><code>qwen2.5:3b</code></td>
+<td>4GB</td>
 <td>Good</td>
-<td>Fast</td>
+<td>Moderate</td>
 </tr>
 <tr>
 <td>16GB RAM, CPU</td>
-<td><code>llama3.1:8b</code></td>
+<td><code>qwen2.5:7b</code></td>
 <td>8GB</td>
 <td>Excellent</td>
 <td>Moderate</td>
@@ -1595,36 +1755,40 @@
 </table>
 <p><strong>Hardware assessment</strong> in <code>start.sh</code>/<code>start.ps1</code> automatically recommends optimal model.</p>
 <p><strong>See:</strong> <a href="../HARDWARE-RECOMMENDATIONS/">Hardware Recommendations</a> for detailed comparison.</p>
-<h3 id="ollama_host">OLLAMA_HOST<a class="headerlink" href="#ollama_host" title="Permanent link">&para;</a></h3>
-<p><strong>Ollama Service Host</strong> - Where to find Ollama API.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>OLLAMA_HOST=ollama  # Docker service name (default)
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a># or
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>OLLAMA_HOST=localhost:11434  # For local development
+<h3 id="ollama_embedding_model">OLLAMA_EMBEDDING_MODEL<a class="headerlink" href="#ollama_embedding_model" title="Permanent link">&para;</a></h3>
+<p><strong>Embedding Model Selection</strong> - Model for generating vector embeddings (runs on generation container).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 </code></pre></div>
-<p><strong>Default</strong>: <code>ollama</code> (Docker Compose service name)</p>
-<p><strong>When to change:</strong>
-- Running Ollama outside Docker
-- Custom Ollama deployment
-- Remote Ollama server</p>
+<p><strong>Default</strong>: <code>nomic-embed-text</code> (768-dimensional vectors, same as Gemini)</p>
+<p><strong>Note:</strong> Embeddings run on the generation container alongside the generation model.</p>
 <h3 id="ollama_docker_memory">OLLAMA_DOCKER_MEMORY<a class="headerlink" href="#ollama_docker_memory" title="Permanent link">&para;</a></h3>
-<p><strong>Docker Memory Allocation</strong> - RAM limit for Ollama container (GB).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>OLLAMA_DOCKER_MEMORY=8
+<p><strong>Docker Memory Allocation</strong> - RAM limit for the generation container (GB).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>OLLAMA_DOCKER_MEMORY=8
 </code></pre></div>
-<p><strong>Recommended by Model:</strong>
-- <code>phi3:mini</code>: 5GB
-- <code>llama3.1:8b</code>: 8GB
+<p><strong>Recommended by Generation Model:</strong>
+- <code>qwen2.5:3b</code>: 4GB
+- <code>qwen2.5:7b</code>: 8GB
 - <code>qwen2.5:14b</code>: 12GB
 - <code>qwen2.5:32b</code>: 24GB</p>
+<p><strong>Note:</strong> The router container uses 1GB fixed allocation (small model only).</p>
+<p><strong>Total Ollama Memory:</strong>
+- Router container: 1GB (fixed)
+- Generation container: <code>OLLAMA_DOCKER_MEMORY</code> value
+- Example: 8GB + 1GB = 9GB total for Ollama</p>
 <p><strong>Auto-set</strong> by startup script based on model selection.</p>
-<p><strong>Manual adjustment</strong> needed if:
-- Out of memory errors
-- Running larger custom models
-- Memory-constrained system</p>
+<h3 id="ollama_timeout">OLLAMA_TIMEOUT<a class="headerlink" href="#ollama_timeout" title="Permanent link">&para;</a></h3>
+<p><strong>API Timeout</strong> - Request timeout in seconds for Ollama API calls.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>OLLAMA_TIMEOUT=30
+</code></pre></div>
+<p><strong>Default</strong>: <code>30</code> seconds</p>
+<p><strong>Adjust for:</strong>
+- Slow hardware: Increase to 60-120
+- Fast GPU: Can decrease to 15-20</p>
 <h2 id="optional-api-keys">Optional API Keys<a class="headerlink" href="#optional-api-keys" title="Permanent link">&para;</a></h2>
 <p>These enhance capabilities but are not required.</p>
 <h3 id="anthropic_api_key">ANTHROPIC_API_KEY<a class="headerlink" href="#anthropic_api_key" title="Permanent link">&para;</a></h3>
 <p><strong>Anthropic Claude API Key</strong> - For complex reasoning tasks.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>ANTHROPIC_API_KEY=sk-ant-api03-OEKnlIipBFzxRV1234567890...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>ANTHROPIC_API_KEY=sk-ant-api03-OEKnlIipBFzxRV1234567890...
 </code></pre></div>
 <p><strong>How to get:</strong>
 1. <a href="https://console.anthropic.com/">Anthropic Console</a>
@@ -1644,7 +1808,7 @@
 <p><strong>Can be omitted</strong> - Gemini Flash handles all queries (lower quality for complex tasks).</p>
 <h3 id="openai_api_key">OPENAI_API_KEY<a class="headerlink" href="#openai_api_key" title="Permanent link">&para;</a></h3>
 <p><strong>OpenAI API Key</strong> - Alternative for complex tasks (GPT-4o).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>OPENAI_API_KEY=sk-proj-1234567890abcdefghijklmnopqrstuvwxyz...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>OPENAI_API_KEY=sk-proj-1234567890abcdefghijklmnopqrstuvwxyz...
 </code></pre></div>
 <p><strong>How to get:</strong>
 1. <a href="https://platform.openai.com/">OpenAI Platform</a>
@@ -1663,21 +1827,21 @@
 <h2 id="security-configuration">Security Configuration<a class="headerlink" href="#security-configuration" title="Permanent link">&para;</a></h2>
 <h3 id="allowed_user_ids">ALLOWED_USER_IDS<a class="headerlink" href="#allowed_user_ids" title="Permanent link">&para;</a></h3>
 <p><strong>User Allowlist</strong> - Restrict bot access to specific Discord users (comma-separated user IDs).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>ALLOWED_USER_IDS=123456789012345678,987654321098765432
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>ALLOWED_USER_IDS=123456789012345678,987654321098765432
 </code></pre></div>
 <p><strong>Getting User IDs:</strong>
 1. Enable Discord Developer Mode (Settings → Advanced)
 2. Right-click user → Copy User ID
 3. Add to comma-separated list</p>
 <p><strong>Examples:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a># Single user
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>ALLOWED_USER_IDS=123456789012345678
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a># Multiple users
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>ALLOWED_USER_IDS=123456789012345678,987654321098765432,456789012345678901
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a># All users (not recommended for production)
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>ALLOWED_USER_IDS=
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a># Single user
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>ALLOWED_USER_IDS=123456789012345678
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a># Multiple users
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>ALLOWED_USER_IDS=123456789012345678,987654321098765432,456789012345678901
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a># All users (not recommended for production)
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>ALLOWED_USER_IDS=
 </code></pre></div></p>
 <p><strong>Security:</strong>
 - ✅ <strong>Recommended</strong>: Set to your user ID(s)
@@ -1685,7 +1849,7 @@
 - 🔒 <strong>Production</strong>: Always set allowlist</p>
 <h3 id="encryption_enabled">ENCRYPTION_ENABLED<a class="headerlink" href="#encryption_enabled" title="Permanent link">&para;</a></h3>
 <p><strong>Data Encryption</strong> - Enable AES-256-GCM encryption for vector storage.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>ENCRYPTION_ENABLED=true
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>ENCRYPTION_ENABLED=true
 </code></pre></div>
 <p><strong>Default</strong>: <code>false</code> (disabled)</p>
 <p><strong>When enabled:</strong>
@@ -1695,18 +1859,18 @@
 <p><strong>See:</strong> <a href="../SECURITY/#data-encryption-phase-5a">Security Guide</a> for details.</p>
 <h3 id="encryption_passphrase">ENCRYPTION_PASSPHRASE<a class="headerlink" href="#encryption_passphrase" title="Permanent link">&para;</a></h3>
 <p><strong>Encryption Key</strong> - Passphrase for AES-256-GCM encryption (required if <code>ENCRYPTION_ENABLED=true</code>).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>ENCRYPTION_PASSPHRASE=your-secure-passphrase-here-min-16-chars
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>ENCRYPTION_PASSPHRASE=your-secure-passphrase-here-min-16-chars
 </code></pre></div>
 <p><strong>Requirements:</strong>
 - Minimum 16 characters
 - Use strong, random passphrase
 - Never commit to git</p>
 <p><strong>Generating secure passphrase:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Generate 32-byte random passphrase</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="c1"># Output: 8zP3kL9mN2qR5vT7wX0yA4bC6dE1fG8hI...</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="c1"># Or use password manager to generate</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># Generate 32-byte random passphrase</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>openssl<span class="w"> </span>rand<span class="w"> </span>-base64<span class="w"> </span><span class="m">32</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1"># Output: 8zP3kL9mN2qR5vT7wX0yA4bC6dE1fG8hI...</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="c1"># Or use password manager to generate</span>
 </code></pre></div></p>
 <p><strong>⚠️ CRITICAL:</strong>
 - <strong>Never lose this</strong>: Cannot decrypt data without it
@@ -1715,7 +1879,7 @@
 <h2 id="performance-tuning">Performance Tuning<a class="headerlink" href="#performance-tuning" title="Permanent link">&para;</a></h2>
 <h3 id="rate_limit_messages">RATE_LIMIT_MESSAGES<a class="headerlink" href="#rate_limit_messages" title="Permanent link">&para;</a></h3>
 <p><strong>Rate Limit</strong> - Maximum messages per user per time window.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>RATE_LIMIT_MESSAGES=10
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>RATE_LIMIT_MESSAGES=10
 </code></pre></div>
 <p><strong>Default</strong>: <code>10</code> messages</p>
 <p><strong>Purpose:</strong>
@@ -1728,33 +1892,33 @@
 - <strong>Production</strong>: 10 messages/minute (monitor costs)</p>
 <h3 id="rate_limit_window">RATE_LIMIT_WINDOW<a class="headerlink" href="#rate_limit_window" title="Permanent link">&para;</a></h3>
 <p><strong>Rate Limit Window</strong> - Time window in seconds for rate limiting.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>RATE_LIMIT_WINDOW=60
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>RATE_LIMIT_WINDOW=60
 </code></pre></div>
 <p><strong>Default</strong>: <code>60</code> seconds (1 minute)</p>
 <p><strong>Examples:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a># Strict: 5 messages per 30 seconds
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>RATE_LIMIT_MESSAGES=5
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>RATE_LIMIT_WINDOW=30
-<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a># Lenient: 20 messages per 2 minutes
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>RATE_LIMIT_MESSAGES=20
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>RATE_LIMIT_WINDOW=120
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a># Strict: 5 messages per 30 seconds
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>RATE_LIMIT_MESSAGES=5
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>RATE_LIMIT_WINDOW=30
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a># Lenient: 20 messages per 2 minutes
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>RATE_LIMIT_MESSAGES=20
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>RATE_LIMIT_WINDOW=120
 </code></pre></div></p>
 <h3 id="qdrant_host">QDRANT_HOST<a class="headerlink" href="#qdrant_host" title="Permanent link">&para;</a></h3>
 <p><strong>Qdrant Service Host</strong> - Vector database connection.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>QDRANT_HOST=qdrant  # Docker service name (default)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>QDRANT_HOST=qdrant  # Docker service name (default)
 </code></pre></div>
 <p><strong>Default</strong>: <code>qdrant</code> (Docker Compose service name)</p>
 <p><strong>Alternatives:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a># Local development
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>QDRANT_HOST=localhost
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a># Remote Qdrant instance
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>QDRANT_HOST=qdrant.example.com
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a># Local development
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>QDRANT_HOST=localhost
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a># Remote Qdrant instance
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>QDRANT_HOST=qdrant.example.com
 </code></pre></div></p>
 <h3 id="qdrant_port">QDRANT_PORT<a class="headerlink" href="#qdrant_port" title="Permanent link">&para;</a></h3>
 <p><strong>Qdrant Service Port</strong> - Vector database API port.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>QDRANT_PORT=6333
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>QDRANT_PORT=6333
 </code></pre></div>
 <p><strong>Default</strong>: <code>6333</code> (Qdrant standard port)</p>
 <p><strong>Change if:</strong>
@@ -1764,7 +1928,7 @@
 <h2 id="logging-configuration">Logging Configuration<a class="headerlink" href="#logging-configuration" title="Permanent link">&para;</a></h2>
 <h3 id="log_level">LOG_LEVEL<a class="headerlink" href="#log_level" title="Permanent link">&para;</a></h3>
 <p><strong>Logging Verbosity</strong> - Controls detail level of logs.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>LOG_LEVEL=INFO
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>LOG_LEVEL=INFO
 </code></pre></div>
 <p><strong>Options</strong> (from most to least verbose):
 - <code>DEBUG</code>: All messages (development, troubleshooting)
@@ -1778,7 +1942,7 @@
 - <strong>Troubleshooting</strong>: <code>DEBUG</code> (temporarily)</p>
 <h3 id="log_to_file">LOG_TO_FILE<a class="headerlink" href="#log_to_file" title="Permanent link">&para;</a></h3>
 <p><strong>File Logging</strong> - Enable writing logs to files.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>LOG_TO_FILE=true
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>LOG_TO_FILE=true
 </code></pre></div>
 <p><strong>Default</strong>: <code>true</code> (enabled)</p>
 <p><strong>When enabled:</strong>
@@ -1790,11 +1954,11 @@
 - Docker log aggregation (use <code>docker-compose logs</code> instead)</p>
 <h3 id="log_directory">LOG_DIRECTORY<a class="headerlink" href="#log_directory" title="Permanent link">&para;</a></h3>
 <p><strong>Log File Directory</strong> - Where to store log files.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>LOG_DIRECTORY=logs
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>LOG_DIRECTORY=logs
 </code></pre></div>
 <p><strong>Default</strong>: <code>logs/</code> (relative to project root)</p>
 <p><strong>Absolute path example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>LOG_DIRECTORY=/var/log/zetherion-ai
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>LOG_DIRECTORY=/var/log/zetherion-ai
 </code></pre></div></p>
 <p><strong>Ensure directory:</strong>
 - Exists or is created automatically
@@ -1802,26 +1966,26 @@
 <h2 id="advanced-settings">Advanced Settings<a class="headerlink" href="#advanced-settings" title="Permanent link">&para;</a></h2>
 <h3 id="discord_command_prefix">DISCORD_COMMAND_PREFIX<a class="headerlink" href="#discord_command_prefix" title="Permanent link">&para;</a></h3>
 <p><strong>Command Prefix</strong> - Prefix for text-based commands (alternative to mentions).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>DISCORD_COMMAND_PREFIX=!
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>DISCORD_COMMAND_PREFIX=!
 </code></pre></div>
 <p><strong>Default</strong>: <code>None</code> (mention-only)</p>
 <p><strong>Examples:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a># Exclamation prefix
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>DISCORD_COMMAND_PREFIX=!
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a># Usage: !ask What is the weather?
-<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>
-<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a># Dot prefix
-<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>DISCORD_COMMAND_PREFIX=.
-<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a># Usage: .ask What is the weather?
-<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>
-<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a># No prefix (mention only)
-<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a>DISCORD_COMMAND_PREFIX=
-<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a># Usage: @Zetherion AI What is the weather?
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a># Exclamation prefix
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>DISCORD_COMMAND_PREFIX=!
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a># Usage: !ask What is the weather?
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a># Dot prefix
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>DISCORD_COMMAND_PREFIX=.
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a># Usage: .ask What is the weather?
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a># No prefix (mention only)
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>DISCORD_COMMAND_PREFIX=
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a># Usage: @Zetherion AI What is the weather?
 </code></pre></div></p>
 <p><strong>Note</strong>: Slash commands (<code>/ask</code>) always work regardless of prefix.</p>
 <h3 id="qdrant_use_tls">QDRANT_USE_TLS<a class="headerlink" href="#qdrant_use_tls" title="Permanent link">&para;</a></h3>
 <p><strong>TLS Encryption</strong> - Enable encrypted connection to Qdrant.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>QDRANT_USE_TLS=false
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>QDRANT_USE_TLS=false
 </code></pre></div>
 <p><strong>Default</strong>: <code>false</code> (unencrypted, OK for local Docker network)</p>
 <p><strong>Enable for:</strong>
@@ -1834,7 +1998,7 @@
 <p><strong>See:</strong> <a href="../SECURITY/#tls-for-qdrant-in-transit-encryption">Security Guide</a></p>
 <h3 id="memory_search_limit">MEMORY_SEARCH_LIMIT<a class="headerlink" href="#memory_search_limit" title="Permanent link">&para;</a></h3>
 <p><strong>Memory Search Results</strong> - Maximum number of results from vector search.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>MEMORY_SEARCH_LIMIT=5
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>MEMORY_SEARCH_LIMIT=5
 </code></pre></div>
 <p><strong>Default</strong>: <code>5</code> results</p>
 <p><strong>Purpose:</strong>
@@ -1847,7 +2011,7 @@
 - <strong>Cost-sensitive</strong>: Decrease to 3-5</p>
 <h3 id="context_window_size">CONTEXT_WINDOW_SIZE<a class="headerlink" href="#context_window_size" title="Permanent link">&para;</a></h3>
 <p><strong>Conversation History</strong> - Number of recent messages to include in context.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>CONTEXT_WINDOW_SIZE=10
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>CONTEXT_WINDOW_SIZE=10
 </code></pre></div>
 <p><strong>Default</strong>: <code>10</code> messages</p>
 <p><strong>Higher values:</strong>
@@ -1860,119 +2024,130 @@
 - Faster responses</p>
 <h2 id="environment-specific-configs">Environment-Specific Configs<a class="headerlink" href="#environment-specific-configs" title="Permanent link">&para;</a></h2>
 <h3 id="development-environment">Development Environment<a class="headerlink" href="#development-environment" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a># .env.development
-<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>LOG_LEVEL=DEBUG
-<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>LOG_TO_FILE=true
-<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>RATE_LIMIT_MESSAGES=100  # High limit for testing
-<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>ROUTER_BACKEND=gemini    # Fast iteration
-<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>ENCRYPTION_ENABLED=false # Faster for testing
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a># .env.development
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>LOG_LEVEL=DEBUG
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>LOG_TO_FILE=true
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>RATE_LIMIT_MESSAGES=100  # High limit for testing
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>ROUTER_BACKEND=gemini    # Fast iteration
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>ENCRYPTION_ENABLED=false # Faster for testing
 </code></pre></div>
 <h3 id="production-environment">Production Environment<a class="headerlink" href="#production-environment" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a># .env.production
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>LOG_LEVEL=INFO
-<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>LOG_TO_FILE=true
-<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>RATE_LIMIT_MESSAGES=10
-<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>ROUTER_BACKEND=ollama  # Privacy-focused
-<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>ENCRYPTION_ENABLED=true
-<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>ENCRYPTION_PASSPHRASE=&lt;strong-passphrase&gt;
-<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>ALLOWED_USER_IDS=&lt;specific-users&gt;
-<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>QDRANT_USE_TLS=true
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a># .env.production
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>LOG_LEVEL=INFO
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>LOG_TO_FILE=true
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>RATE_LIMIT_MESSAGES=10
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>ROUTER_BACKEND=ollama  # Privacy-focused
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>ENCRYPTION_ENABLED=true
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>ENCRYPTION_PASSPHRASE=&lt;strong-passphrase&gt;
+<a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a>ALLOWED_USER_IDS=&lt;specific-users&gt;
+<a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a>QDRANT_USE_TLS=true
 </code></pre></div>
 <h3 id="testing-environment">Testing Environment<a class="headerlink" href="#testing-environment" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a># .env.test
-<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>LOG_LEVEL=WARNING
-<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>LOG_TO_FILE=false  # Use stdout for CI logs
-<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>ROUTER_BACKEND=gemini
-<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>ALLOWED_USER_IDS=  # Allow test users
-<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>RATE_LIMIT_MESSAGES=1000  # No limits during tests
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a># .env.test
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>LOG_LEVEL=WARNING
+<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>LOG_TO_FILE=false  # Use stdout for CI logs
+<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>ROUTER_BACKEND=gemini
+<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a>ALLOWED_USER_IDS=  # Allow test users
+<a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a>RATE_LIMIT_MESSAGES=1000  # No limits during tests
 </code></pre></div>
 <h2 id="configuration-examples">Configuration Examples<a class="headerlink" href="#configuration-examples" title="Permanent link">&para;</a></h2>
 <h3 id="minimal-setup-personal-use">Minimal Setup (Personal Use)<a class="headerlink" href="#minimal-setup-personal-use" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a># Required only
-<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a>DISCORD_TOKEN=MTQz...
-<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a>GEMINI_API_KEY=AIzaSy...
-<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a>
-<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a># Recommended
-<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>ROUTER_BACKEND=gemini
-<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a>ALLOWED_USER_IDS=123456789012345678
-<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a>LOG_LEVEL=INFO
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a># Required only
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>DISCORD_TOKEN=MTQz...
+<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>GEMINI_API_KEY=AIzaSy...
+<a id="__codelineno-39-4" name="__codelineno-39-4" href="#__codelineno-39-4"></a>
+<a id="__codelineno-39-5" name="__codelineno-39-5" href="#__codelineno-39-5"></a># Recommended
+<a id="__codelineno-39-6" name="__codelineno-39-6" href="#__codelineno-39-6"></a>ROUTER_BACKEND=gemini
+<a id="__codelineno-39-7" name="__codelineno-39-7" href="#__codelineno-39-7"></a>ALLOWED_USER_IDS=123456789012345678
+<a id="__codelineno-39-8" name="__codelineno-39-8" href="#__codelineno-39-8"></a>LOG_LEVEL=INFO
 </code></pre></div>
 <p><strong>Good for:</strong>
 - Quick start
 - Personal Discord server
 - Gemini free tier</p>
 <h3 id="privacy-focused-setup">Privacy-Focused Setup<a class="headerlink" href="#privacy-focused-setup" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a># Required
-<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a>DISCORD_TOKEN=MTQz...
-<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a>GEMINI_API_KEY=AIzaSy...  # Still needed for embeddings
-<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>
-<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a># Ollama for routing (local)
-<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a>ROUTER_BACKEND=ollama
-<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>OLLAMA_ROUTER_MODEL=qwen2.5:14b
-<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>OLLAMA_DOCKER_MEMORY=12
-<a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>
-<a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a># Security
-<a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>ALLOWED_USER_IDS=123456789012345678
-<a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a>ENCRYPTION_ENABLED=true
-<a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a>ENCRYPTION_PASSPHRASE=&lt;strong-passphrase&gt;
-<a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a>
-<a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a># Logging
-<a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a>LOG_LEVEL=INFO
-<a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a>LOG_TO_FILE=true
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a># Required
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>DISCORD_TOKEN=MTQz...
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a># GEMINI_API_KEY not needed when using local embeddings
+<a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a>
+<a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a># Ollama for routing (local, dual-container architecture)
+<a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>ROUTER_BACKEND=ollama
+<a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a>EMBEDDINGS_BACKEND=ollama  # Use local embeddings too
+<a id="__codelineno-40-8" name="__codelineno-40-8" href="#__codelineno-40-8"></a>
+<a id="__codelineno-40-9" name="__codelineno-40-9" href="#__codelineno-40-9"></a># Router container (fast classification)
+<a id="__codelineno-40-10" name="__codelineno-40-10" href="#__codelineno-40-10"></a>OLLAMA_ROUTER_HOST=ollama-router
+<a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a>OLLAMA_ROUTER_PORT=11434
+<a id="__codelineno-40-12" name="__codelineno-40-12" href="#__codelineno-40-12"></a>OLLAMA_ROUTER_MODEL=qwen2.5:0.5b
+<a id="__codelineno-40-13" name="__codelineno-40-13" href="#__codelineno-40-13"></a>
+<a id="__codelineno-40-14" name="__codelineno-40-14" href="#__codelineno-40-14"></a># Generation container (complex queries + embeddings)
+<a id="__codelineno-40-15" name="__codelineno-40-15" href="#__codelineno-40-15"></a>OLLAMA_HOST=ollama
+<a id="__codelineno-40-16" name="__codelineno-40-16" href="#__codelineno-40-16"></a>OLLAMA_PORT=11434
+<a id="__codelineno-40-17" name="__codelineno-40-17" href="#__codelineno-40-17"></a>OLLAMA_GENERATION_MODEL=qwen2.5:14b
+<a id="__codelineno-40-18" name="__codelineno-40-18" href="#__codelineno-40-18"></a>OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+<a id="__codelineno-40-19" name="__codelineno-40-19" href="#__codelineno-40-19"></a>OLLAMA_DOCKER_MEMORY=12
+<a id="__codelineno-40-20" name="__codelineno-40-20" href="#__codelineno-40-20"></a>
+<a id="__codelineno-40-21" name="__codelineno-40-21" href="#__codelineno-40-21"></a># Security
+<a id="__codelineno-40-22" name="__codelineno-40-22" href="#__codelineno-40-22"></a>ALLOWED_USER_IDS=123456789012345678
+<a id="__codelineno-40-23" name="__codelineno-40-23" href="#__codelineno-40-23"></a>ENCRYPTION_ENABLED=true
+<a id="__codelineno-40-24" name="__codelineno-40-24" href="#__codelineno-40-24"></a>ENCRYPTION_PASSPHRASE=&lt;strong-passphrase&gt;
+<a id="__codelineno-40-25" name="__codelineno-40-25" href="#__codelineno-40-25"></a>
+<a id="__codelineno-40-26" name="__codelineno-40-26" href="#__codelineno-40-26"></a># Logging
+<a id="__codelineno-40-27" name="__codelineno-40-27" href="#__codelineno-40-27"></a>LOG_LEVEL=INFO
+<a id="__codelineno-40-28" name="__codelineno-40-28" href="#__codelineno-40-28"></a>LOG_TO_FILE=true
 </code></pre></div>
 <p><strong>Good for:</strong>
-- Privacy requirements
+- Privacy requirements (no data leaves your machine)
 - Offline capability
-- Powerful hardware</p>
+- Powerful hardware (16GB+ RAM)</p>
 <h3 id="professional-setup-best-quality">Professional Setup (Best Quality)<a class="headerlink" href="#professional-setup-best-quality" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a># Required
-<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>DISCORD_TOKEN=MTQz...
-<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>GEMINI_API_KEY=AIzaSy...
-<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>
-<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a># All AI providers
-<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>ANTHROPIC_API_KEY=sk-ant-...
-<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>OPENAI_API_KEY=sk-...
-<a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>
-<a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a># Cloud routing for speed
-<a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a>ROUTER_BACKEND=gemini
-<a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a>
-<a id="__codelineno-34-12" name="__codelineno-34-12" href="#__codelineno-34-12"></a># Security
-<a id="__codelineno-34-13" name="__codelineno-34-13" href="#__codelineno-34-13"></a>ALLOWED_USER_IDS=123,456,789
-<a id="__codelineno-34-14" name="__codelineno-34-14" href="#__codelineno-34-14"></a>RATE_LIMIT_MESSAGES=15
-<a id="__codelineno-34-15" name="__codelineno-34-15" href="#__codelineno-34-15"></a>ENCRYPTION_ENABLED=true
-<a id="__codelineno-34-16" name="__codelineno-34-16" href="#__codelineno-34-16"></a>ENCRYPTION_PASSPHRASE=&lt;strong-passphrase&gt;
-<a id="__codelineno-34-17" name="__codelineno-34-17" href="#__codelineno-34-17"></a>
-<a id="__codelineno-34-18" name="__codelineno-34-18" href="#__codelineno-34-18"></a># Logging
-<a id="__codelineno-34-19" name="__codelineno-34-19" href="#__codelineno-34-19"></a>LOG_LEVEL=INFO
-<a id="__codelineno-34-20" name="__codelineno-34-20" href="#__codelineno-34-20"></a>LOG_TO_FILE=true
-<a id="__codelineno-34-21" name="__codelineno-34-21" href="#__codelineno-34-21"></a>LOG_DIRECTORY=/var/log/zetherion-ai
-<a id="__codelineno-34-22" name="__codelineno-34-22" href="#__codelineno-34-22"></a>
-<a id="__codelineno-34-23" name="__codelineno-34-23" href="#__codelineno-34-23"></a># Performance
-<a id="__codelineno-34-24" name="__codelineno-34-24" href="#__codelineno-34-24"></a>CONTEXT_WINDOW_SIZE=15
-<a id="__codelineno-34-25" name="__codelineno-34-25" href="#__codelineno-34-25"></a>MEMORY_SEARCH_LIMIT=7
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a># Required
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>DISCORD_TOKEN=MTQz...
+<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>GEMINI_API_KEY=AIzaSy...
+<a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a>
+<a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a># All AI providers
+<a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a>ANTHROPIC_API_KEY=sk-ant-...
+<a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a>OPENAI_API_KEY=sk-...
+<a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>
+<a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a># Cloud routing for speed
+<a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a>ROUTER_BACKEND=gemini
+<a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a>
+<a id="__codelineno-41-12" name="__codelineno-41-12" href="#__codelineno-41-12"></a># Security
+<a id="__codelineno-41-13" name="__codelineno-41-13" href="#__codelineno-41-13"></a>ALLOWED_USER_IDS=123,456,789
+<a id="__codelineno-41-14" name="__codelineno-41-14" href="#__codelineno-41-14"></a>RATE_LIMIT_MESSAGES=15
+<a id="__codelineno-41-15" name="__codelineno-41-15" href="#__codelineno-41-15"></a>ENCRYPTION_ENABLED=true
+<a id="__codelineno-41-16" name="__codelineno-41-16" href="#__codelineno-41-16"></a>ENCRYPTION_PASSPHRASE=&lt;strong-passphrase&gt;
+<a id="__codelineno-41-17" name="__codelineno-41-17" href="#__codelineno-41-17"></a>
+<a id="__codelineno-41-18" name="__codelineno-41-18" href="#__codelineno-41-18"></a># Logging
+<a id="__codelineno-41-19" name="__codelineno-41-19" href="#__codelineno-41-19"></a>LOG_LEVEL=INFO
+<a id="__codelineno-41-20" name="__codelineno-41-20" href="#__codelineno-41-20"></a>LOG_TO_FILE=true
+<a id="__codelineno-41-21" name="__codelineno-41-21" href="#__codelineno-41-21"></a>LOG_DIRECTORY=/var/log/zetherion-ai
+<a id="__codelineno-41-22" name="__codelineno-41-22" href="#__codelineno-41-22"></a>
+<a id="__codelineno-41-23" name="__codelineno-41-23" href="#__codelineno-41-23"></a># Performance
+<a id="__codelineno-41-24" name="__codelineno-41-24" href="#__codelineno-41-24"></a>CONTEXT_WINDOW_SIZE=15
+<a id="__codelineno-41-25" name="__codelineno-41-25" href="#__codelineno-41-25"></a>MEMORY_SEARCH_LIMIT=7
 </code></pre></div>
 <p><strong>Good for:</strong>
 - Professional use
 - Team deployments
 - Best quality responses</p>
 <h3 id="budget-conscious-setup">Budget-Conscious Setup<a class="headerlink" href="#budget-conscious-setup" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a># Required (free tiers)
-<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>DISCORD_TOKEN=MTQz...
-<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>GEMINI_API_KEY=AIzaSy...
-<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>
-<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a># Free routing
-<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>ROUTER_BACKEND=gemini
-<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>
-<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a># Strict rate limiting
-<a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a>RATE_LIMIT_MESSAGES=5
-<a id="__codelineno-35-10" name="__codelineno-35-10" href="#__codelineno-35-10"></a>RATE_LIMIT_WINDOW=60
-<a id="__codelineno-35-11" name="__codelineno-35-11" href="#__codelineno-35-11"></a>
-<a id="__codelineno-35-12" name="__codelineno-35-12" href="#__codelineno-35-12"></a># Minimize token usage
-<a id="__codelineno-35-13" name="__codelineno-35-13" href="#__codelineno-35-13"></a>CONTEXT_WINDOW_SIZE=5
-<a id="__codelineno-35-14" name="__codelineno-35-14" href="#__codelineno-35-14"></a>MEMORY_SEARCH_LIMIT=3
-<a id="__codelineno-35-15" name="__codelineno-35-15" href="#__codelineno-35-15"></a>
-<a id="__codelineno-35-16" name="__codelineno-35-16" href="#__codelineno-35-16"></a># Security
-<a id="__codelineno-35-17" name="__codelineno-35-17" href="#__codelineno-35-17"></a>ALLOWED_USER_IDS=123456789012345678
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a># Required (free tiers)
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>DISCORD_TOKEN=MTQz...
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>GEMINI_API_KEY=AIzaSy...
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a>
+<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a># Free routing
+<a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a>ROUTER_BACKEND=gemini
+<a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a>
+<a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a># Strict rate limiting
+<a id="__codelineno-42-9" name="__codelineno-42-9" href="#__codelineno-42-9"></a>RATE_LIMIT_MESSAGES=5
+<a id="__codelineno-42-10" name="__codelineno-42-10" href="#__codelineno-42-10"></a>RATE_LIMIT_WINDOW=60
+<a id="__codelineno-42-11" name="__codelineno-42-11" href="#__codelineno-42-11"></a>
+<a id="__codelineno-42-12" name="__codelineno-42-12" href="#__codelineno-42-12"></a># Minimize token usage
+<a id="__codelineno-42-13" name="__codelineno-42-13" href="#__codelineno-42-13"></a>CONTEXT_WINDOW_SIZE=5
+<a id="__codelineno-42-14" name="__codelineno-42-14" href="#__codelineno-42-14"></a>MEMORY_SEARCH_LIMIT=3
+<a id="__codelineno-42-15" name="__codelineno-42-15" href="#__codelineno-42-15"></a>
+<a id="__codelineno-42-16" name="__codelineno-42-16" href="#__codelineno-42-16"></a># Security
+<a id="__codelineno-42-17" name="__codelineno-42-17" href="#__codelineno-42-17"></a>ALLOWED_USER_IDS=123456789012345678
 </code></pre></div>
 <p><strong>Good for:</strong>
 - Staying within free tiers
@@ -1981,50 +2156,50 @@
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <h3 id="check-configuration">Check Configuration<a class="headerlink" href="#check-configuration" title="Permanent link">&para;</a></h3>
 <p><strong>Verify .env file exists:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>ls<span class="w"> </span>-la<span class="w"> </span>.env
-<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="c1"># Should show: -rw------- 1 user user 1234 .env</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>ls<span class="w"> </span>-la<span class="w"> </span>.env
+<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="c1"># Should show: -rw------- 1 user user 1234 .env</span>
 </code></pre></div></p>
 <p><strong>Verify required keys set:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;^(DISCORD_TOKEN|GEMINI_API_KEY)=&quot;</span><span class="w"> </span>.env
-<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="c1"># Should show both variables with values</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;^(DISCORD_TOKEN|GEMINI_API_KEY)=&quot;</span><span class="w"> </span>.env
+<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="c1"># Should show both variables with values</span>
 </code></pre></div></p>
 <p><strong>Test configuration:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a><span class="c1"># Start and check logs</span>
-<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>./start.sh
-<a id="__codelineno-38-3" name="__codelineno-38-3" href="#__codelineno-38-3"></a>docker-compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>zetherion-ai-bot
-<a id="__codelineno-38-4" name="__codelineno-38-4" href="#__codelineno-38-4"></a>
-<a id="__codelineno-38-5" name="__codelineno-38-5" href="#__codelineno-38-5"></a><span class="c1"># Look for:</span>
-<a id="__codelineno-38-6" name="__codelineno-38-6" href="#__codelineno-38-6"></a><span class="c1"># ✓ Discord token validated</span>
-<a id="__codelineno-38-7" name="__codelineno-38-7" href="#__codelineno-38-7"></a><span class="c1"># ✓ Gemini API key validated</span>
-<a id="__codelineno-38-8" name="__codelineno-38-8" href="#__codelineno-38-8"></a><span class="c1"># ✓ Router backend: gemini (or ollama)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="c1"># Start and check logs</span>
+<a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>./start.sh
+<a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a>docker-compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>zetherion-ai-bot
+<a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a>
+<a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a><span class="c1"># Look for:</span>
+<a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a><span class="c1"># ✓ Discord token validated</span>
+<a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a><span class="c1"># ✓ Gemini API key validated</span>
+<a id="__codelineno-45-8" name="__codelineno-45-8" href="#__codelineno-45-8"></a><span class="c1"># ✓ Router backend: gemini (or ollama)</span>
 </code></pre></div></p>
 <h3 id="common-validation-errors">Common Validation Errors<a class="headerlink" href="#common-validation-errors" title="Permanent link">&para;</a></h3>
 <p><strong>"Invalid Discord token format"</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>Fix: Ensure token is 59+ characters, no quotes/spaces
-<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>DISCORD_TOKEN=MTQz...  ✓ Correct
-<a id="__codelineno-39-3" name="__codelineno-39-3" href="#__codelineno-39-3"></a>DISCORD_TOKEN=&quot;MTQz...&quot;  ✗ Has quotes
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>Fix: Ensure token is 59+ characters, no quotes/spaces
+<a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>DISCORD_TOKEN=MTQz...  ✓ Correct
+<a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>DISCORD_TOKEN=&quot;MTQz...&quot;  ✗ Has quotes
 </code></pre></div></p>
 <p><strong>"Gemini API key validation failed"</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>Fix: Ensure key starts with AIzaSy, 39 characters total
-<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>GEMINI_API_KEY=AIzaSy...  ✓ Correct
-<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>GEMINI_API_KEY=AIzaS...   ✗ Too short
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>Fix: Ensure key starts with AIzaSy, 39 characters total
+<a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>GEMINI_API_KEY=AIzaSy...  ✓ Correct
+<a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>GEMINI_API_KEY=AIzaS...   ✗ Too short
 </code></pre></div></p>
 <p><strong>"No users allowed (ALLOWED_USER_IDS empty)"</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>Fix: Set your Discord user ID or expect warning
-<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>ALLOWED_USER_IDS=123456789012345678  ✓ Restricted
-<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a>ALLOWED_USER_IDS=                    ⚠️ Warning (anyone can use)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>Fix: Set your Discord user ID or expect warning
+<a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>ALLOWED_USER_IDS=123456789012345678  ✓ Restricted
+<a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a>ALLOWED_USER_IDS=                    ⚠️ Warning (anyone can use)
 </code></pre></div></p>
 <h2 id="security-best-practices">Security Best Practices<a class="headerlink" href="#security-best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="file-permissions">File Permissions<a class="headerlink" href="#file-permissions" title="Permanent link">&para;</a></h3>
 <p><strong>Unix/Mac:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="c1"># .env should be readable by owner only</span>
-<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a>chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>.env
-<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a>ls<span class="w"> </span>-la<span class="w"> </span>.env
-<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="c1"># Expected: -rw------- (owner read/write only)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a><span class="c1"># .env should be readable by owner only</span>
+<a id="__codelineno-49-2" name="__codelineno-49-2" href="#__codelineno-49-2"></a>chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>.env
+<a id="__codelineno-49-3" name="__codelineno-49-3" href="#__codelineno-49-3"></a>ls<span class="w"> </span>-la<span class="w"> </span>.env
+<a id="__codelineno-49-4" name="__codelineno-49-4" href="#__codelineno-49-4"></a><span class="c1"># Expected: -rw------- (owner read/write only)</span>
 </code></pre></div></p>
 <p><strong>Windows (PowerShell as Admin):</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="c"># Remove inheritance and grant only user access</span>
-<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="n">icacls</span> <span class="p">.</span><span class="n">env</span> <span class="p">/</span><span class="n">inheritance</span><span class="p">:</span><span class="nb">r </span><span class="p">/</span><span class="n">grant</span><span class="p">:</span><span class="nb">r </span><span class="s2">&quot;$env:USERNAME:(R,W)&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a><span class="c"># Remove inheritance and grant only user access</span>
+<a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a><span class="n">icacls</span> <span class="p">.</span><span class="n">env</span> <span class="p">/</span><span class="n">inheritance</span><span class="p">:</span><span class="nb">r </span><span class="p">/</span><span class="n">grant</span><span class="p">:</span><span class="nb">r </span><span class="s2">&quot;$env:USERNAME:(R,W)&quot;</span>
 </code></pre></div></p>
 <h3 id="key-rotation">Key Rotation<a class="headerlink" href="#key-rotation" title="Permanent link">&para;</a></h3>
 <p><strong>Rotate API keys periodically:</strong>
@@ -2039,54 +2214,54 @@
 5. Verify bot still works</p>
 <h3 id="backup-configuration">Backup Configuration<a class="headerlink" href="#backup-configuration" title="Permanent link">&para;</a></h3>
 <p><strong>Backup .env securely:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="c1"># Encrypt backup</span>
-<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a>gpg<span class="w"> </span>-c<span class="w"> </span>.env
-<a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="c1"># Creates: .env.gpg (encrypted)</span>
-<a id="__codelineno-44-4" name="__codelineno-44-4" href="#__codelineno-44-4"></a>
-<a id="__codelineno-44-5" name="__codelineno-44-5" href="#__codelineno-44-5"></a><span class="c1"># Store in secure location (not git)</span>
-<a id="__codelineno-44-6" name="__codelineno-44-6" href="#__codelineno-44-6"></a>mv<span class="w"> </span>.env.gpg<span class="w"> </span>~/secure-backups/
-<a id="__codelineno-44-7" name="__codelineno-44-7" href="#__codelineno-44-7"></a>
-<a id="__codelineno-44-8" name="__codelineno-44-8" href="#__codelineno-44-8"></a><span class="c1"># Restore when needed</span>
-<a id="__codelineno-44-9" name="__codelineno-44-9" href="#__codelineno-44-9"></a>gpg<span class="w"> </span>-d<span class="w"> </span>~/secure-backups/.env.gpg<span class="w"> </span>&gt;<span class="w"> </span>.env
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a><span class="c1"># Encrypt backup</span>
+<a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>gpg<span class="w"> </span>-c<span class="w"> </span>.env
+<a id="__codelineno-51-3" name="__codelineno-51-3" href="#__codelineno-51-3"></a><span class="c1"># Creates: .env.gpg (encrypted)</span>
+<a id="__codelineno-51-4" name="__codelineno-51-4" href="#__codelineno-51-4"></a>
+<a id="__codelineno-51-5" name="__codelineno-51-5" href="#__codelineno-51-5"></a><span class="c1"># Store in secure location (not git)</span>
+<a id="__codelineno-51-6" name="__codelineno-51-6" href="#__codelineno-51-6"></a>mv<span class="w"> </span>.env.gpg<span class="w"> </span>~/secure-backups/
+<a id="__codelineno-51-7" name="__codelineno-51-7" href="#__codelineno-51-7"></a>
+<a id="__codelineno-51-8" name="__codelineno-51-8" href="#__codelineno-51-8"></a><span class="c1"># Restore when needed</span>
+<a id="__codelineno-51-9" name="__codelineno-51-9" href="#__codelineno-51-9"></a>gpg<span class="w"> </span>-d<span class="w"> </span>~/secure-backups/.env.gpg<span class="w"> </span>&gt;<span class="w"> </span>.env
 </code></pre></div></p>
 <h3 id="audit-logging">Audit Logging<a class="headerlink" href="#audit-logging" title="Permanent link">&para;</a></h3>
 <p><strong>Monitor configuration changes:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="c1"># Track who changed .env</span>
-<a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a>git<span class="w"> </span>log<span class="w"> </span>-p<span class="w"> </span>.env.example<span class="w">  </span><span class="c1"># Track template changes in git</span>
-<a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a>
-<a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a><span class="c1"># Log access to .env</span>
-<a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a>audit-log<span class="w"> </span><span class="s2">&quot;.env accessed by </span><span class="nv">$USER</span><span class="s2"> at </span><span class="k">$(</span>date<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>.env.access.log
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a><span class="c1"># Track who changed .env</span>
+<a id="__codelineno-52-2" name="__codelineno-52-2" href="#__codelineno-52-2"></a>git<span class="w"> </span>log<span class="w"> </span>-p<span class="w"> </span>.env.example<span class="w">  </span><span class="c1"># Track template changes in git</span>
+<a id="__codelineno-52-3" name="__codelineno-52-3" href="#__codelineno-52-3"></a>
+<a id="__codelineno-52-4" name="__codelineno-52-4" href="#__codelineno-52-4"></a><span class="c1"># Log access to .env</span>
+<a id="__codelineno-52-5" name="__codelineno-52-5" href="#__codelineno-52-5"></a>audit-log<span class="w"> </span><span class="s2">&quot;.env accessed by </span><span class="nv">$USER</span><span class="s2"> at </span><span class="k">$(</span>date<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>.env.access.log
 </code></pre></div></p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="bot-wont-start">Bot Won't Start<a class="headerlink" href="#bot-wont-start" title="Permanent link">&para;</a></h3>
 <p><strong>Check configuration:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a><span class="c1"># View container logs</span>
-<a id="__codelineno-46-2" name="__codelineno-46-2" href="#__codelineno-46-2"></a>docker-compose<span class="w"> </span>logs<span class="w"> </span>zetherion-ai-bot
-<a id="__codelineno-46-3" name="__codelineno-46-3" href="#__codelineno-46-3"></a>
-<a id="__codelineno-46-4" name="__codelineno-46-4" href="#__codelineno-46-4"></a><span class="c1"># Common errors:</span>
-<a id="__codelineno-46-5" name="__codelineno-46-5" href="#__codelineno-46-5"></a><span class="c1"># - &quot;Invalid Discord token&quot; → Check DISCORD_TOKEN format</span>
-<a id="__codelineno-46-6" name="__codelineno-46-6" href="#__codelineno-46-6"></a><span class="c1"># - &quot;Gemini API error&quot; → Check GEMINI_API_KEY</span>
-<a id="__codelineno-46-7" name="__codelineno-46-7" href="#__codelineno-46-7"></a><span class="c1"># - &quot;Router backend not set&quot; → Add ROUTER_BACKEND=gemini</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a><span class="c1"># View container logs</span>
+<a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>docker-compose<span class="w"> </span>logs<span class="w"> </span>zetherion-ai-bot
+<a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a>
+<a id="__codelineno-53-4" name="__codelineno-53-4" href="#__codelineno-53-4"></a><span class="c1"># Common errors:</span>
+<a id="__codelineno-53-5" name="__codelineno-53-5" href="#__codelineno-53-5"></a><span class="c1"># - &quot;Invalid Discord token&quot; → Check DISCORD_TOKEN format</span>
+<a id="__codelineno-53-6" name="__codelineno-53-6" href="#__codelineno-53-6"></a><span class="c1"># - &quot;Gemini API error&quot; → Check GEMINI_API_KEY</span>
+<a id="__codelineno-53-7" name="__codelineno-53-7" href="#__codelineno-53-7"></a><span class="c1"># - &quot;Router backend not set&quot; → Add ROUTER_BACKEND=gemini</span>
 </code></pre></div></p>
 <h3 id="high-api-costs">High API Costs<a class="headerlink" href="#high-api-costs" title="Permanent link">&para;</a></h3>
 <p><strong>Reduce token usage:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a># Lower context window
-<a id="__codelineno-47-2" name="__codelineno-47-2" href="#__codelineno-47-2"></a>CONTEXT_WINDOW_SIZE=5  # Was: 10
-<a id="__codelineno-47-3" name="__codelineno-47-3" href="#__codelineno-47-3"></a>
-<a id="__codelineno-47-4" name="__codelineno-47-4" href="#__codelineno-47-4"></a># Fewer memory results
-<a id="__codelineno-47-5" name="__codelineno-47-5" href="#__codelineno-47-5"></a>MEMORY_SEARCH_LIMIT=3  # Was: 5
-<a id="__codelineno-47-6" name="__codelineno-47-6" href="#__codelineno-47-6"></a>
-<a id="__codelineno-47-7" name="__codelineno-47-7" href="#__codelineno-47-7"></a># Stricter rate limiting
-<a id="__codelineno-47-8" name="__codelineno-47-8" href="#__codelineno-47-8"></a>RATE_LIMIT_MESSAGES=5  # Was: 10
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a># Lower context window
+<a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a>CONTEXT_WINDOW_SIZE=5  # Was: 10
+<a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a>
+<a id="__codelineno-54-4" name="__codelineno-54-4" href="#__codelineno-54-4"></a># Fewer memory results
+<a id="__codelineno-54-5" name="__codelineno-54-5" href="#__codelineno-54-5"></a>MEMORY_SEARCH_LIMIT=3  # Was: 5
+<a id="__codelineno-54-6" name="__codelineno-54-6" href="#__codelineno-54-6"></a>
+<a id="__codelineno-54-7" name="__codelineno-54-7" href="#__codelineno-54-7"></a># Stricter rate limiting
+<a id="__codelineno-54-8" name="__codelineno-54-8" href="#__codelineno-54-8"></a>RATE_LIMIT_MESSAGES=5  # Was: 10
 </code></pre></div></p>
 <h3 id="performance-issues">Performance Issues<a class="headerlink" href="#performance-issues" title="Permanent link">&para;</a></h3>
 <p><strong>Optimize settings:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a># For faster responses (cloud)
-<a id="__codelineno-48-2" name="__codelineno-48-2" href="#__codelineno-48-2"></a>ROUTER_BACKEND=gemini
-<a id="__codelineno-48-3" name="__codelineno-48-3" href="#__codelineno-48-3"></a>
-<a id="__codelineno-48-4" name="__codelineno-48-4" href="#__codelineno-48-4"></a># For Ollama (if slow)
-<a id="__codelineno-48-5" name="__codelineno-48-5" href="#__codelineno-48-5"></a>OLLAMA_ROUTER_MODEL=phi3:mini  # Faster model
-<a id="__codelineno-48-6" name="__codelineno-48-6" href="#__codelineno-48-6"></a>OLLAMA_DOCKER_MEMORY=5  # Match model requirements
+<div class="highlight"><pre><span></span><code><a id="__codelineno-55-1" name="__codelineno-55-1" href="#__codelineno-55-1"></a># For faster responses (cloud)
+<a id="__codelineno-55-2" name="__codelineno-55-2" href="#__codelineno-55-2"></a>ROUTER_BACKEND=gemini
+<a id="__codelineno-55-3" name="__codelineno-55-3" href="#__codelineno-55-3"></a>
+<a id="__codelineno-55-4" name="__codelineno-55-4" href="#__codelineno-55-4"></a># For Ollama (if slow)
+<a id="__codelineno-55-5" name="__codelineno-55-5" href="#__codelineno-55-5"></a>OLLAMA_ROUTER_MODEL=phi3:mini  # Faster model
+<a id="__codelineno-55-6" name="__codelineno-55-6" href="#__codelineno-55-6"></a>OLLAMA_DOCKER_MEMORY=5  # Match model requirements
 </code></pre></div></p>
 <h2 id="additional-resources">Additional Resources<a class="headerlink" href="#additional-resources" title="Permanent link">&para;</a></h2>
 <ul>

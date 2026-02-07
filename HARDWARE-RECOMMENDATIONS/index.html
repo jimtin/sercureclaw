@@ -1443,15 +1443,15 @@
 </tr>
 <tr>
 <td><strong>RAM</strong></td>
-<td>8GB system RAM</td>
+<td>12GB system RAM</td>
 </tr>
 <tr>
 <td><strong>Docker</strong></td>
-<td>Docker Desktop 4.0+ with 6GB RAM allocated</td>
+<td>Docker Desktop 4.0+ with 9GB RAM allocated</td>
 </tr>
 <tr>
 <td><strong>Disk</strong></td>
-<td>20GB free space (10GB for Docker images, 5-10GB for models)</td>
+<td>25GB free space (10GB for Docker images, 10-15GB for models)</td>
 </tr>
 <tr>
 <td><strong>Network</strong></td>
@@ -1459,6 +1459,10 @@
 </tr>
 </tbody>
 </table>
+<p><strong>Note</strong>: Zetherion AI uses a <strong>dual-container Ollama architecture</strong>:
+- <strong>Router container</strong> (1GB): Fast message classification
+- <strong>Generation container</strong> (8GB+): Complex queries and embeddings
+- This eliminates model-swapping delays (2-10 seconds per swap)</p>
 <h2 id="recommended-specifications">Recommended Specifications<a class="headerlink" href="#recommended-specifications" title="Permanent link">&para;</a></h2>
 <h3 id="for-best-experience-ollama-quality-models">For Best Experience (Ollama + Quality Models)<a class="headerlink" href="#for-best-experience-ollama-quality-models" title="Permanent link">&para;</a></h3>
 <table>
@@ -1808,61 +1812,78 @@
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>docker
 </code></pre></div></p>
 <h3 id="memory-requirements-by-model">Memory Requirements by Model<a class="headerlink" href="#memory-requirements-by-model" title="Permanent link">&para;</a></h3>
+<p>Zetherion AI uses <strong>two Ollama containers</strong> to avoid model-swapping delays:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Memory</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Router Container</strong></td>
+<td>1GB (fixed)</td>
+<td>Fast message classification (qwen2.5:0.5b)</td>
+</tr>
+<tr>
+<td><strong>Generation Container</strong></td>
+<td>Variable</td>
+<td>Complex queries + embeddings</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Generation Container Memory by Model:</strong></p>
 <table>
 <thead>
 <tr>
 <th>Model</th>
-<th>Docker Memory</th>
+<th>Generation Memory</th>
+<th>Total Docker</th>
 <th>System RAM</th>
 <th>Notes</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>phi3:mini</code></td>
+<td><code>qwen2.5:3b</code></td>
+<td>4GB</td>
 <td>5GB</td>
 <td>8GB</td>
 <td>Minimal setup</td>
 </tr>
 <tr>
-<td><code>mistral:7b</code></td>
-<td>7GB</td>
-<td>10GB</td>
-<td>Fast inference</td>
-</tr>
-<tr>
-<td><code>llama3.1:8b</code></td>
+<td><code>qwen2.5:7b</code></td>
 <td>8GB</td>
+<td>9GB</td>
 <td>12GB</td>
 <td><strong>Recommended default</strong></td>
 </tr>
 <tr>
-<td><code>qwen2.5:7b</code></td>
-<td>10GB</td>
-<td>14GB</td>
-<td>Best quality &lt;10GB</td>
+<td><code>llama3.1:8b</code></td>
+<td>8GB</td>
+<td>9GB</td>
+<td>12GB</td>
+<td>Alternative default</td>
 </tr>
 <tr>
 <td><code>qwen2.5:14b</code></td>
 <td>12GB</td>
+<td>13GB</td>
 <td>16GB</td>
 <td>High quality</td>
 </tr>
 <tr>
 <td><code>qwen2.5:32b</code></td>
 <td>24GB</td>
+<td>25GB</td>
 <td>32GB</td>
 <td>Maximum quality</td>
 </tr>
-<tr>
-<td><code>llama3.1:70b</code></td>
-<td>48GB</td>
-<td>64GB</td>
-<td>Research/professional</td>
-</tr>
 </tbody>
 </table>
-<p><strong>Formula</strong>: Docker Memory = Model Size + 2-3GB overhead</p>
+<p><strong>Formula</strong>: Total Docker Memory = 1GB (router) + Generation Memory</p>
 <h2 id="performance-benchmarks">Performance Benchmarks<a class="headerlink" href="#performance-benchmarks" title="Permanent link">&para;</a></h2>
 <h3 id="real-world-response-times">Real-World Response Times<a class="headerlink" href="#real-world-response-times" title="Permanent link">&para;</a></h3>
 <p>Testing setup:
