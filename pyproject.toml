@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Secure personal AI assistant with encrypted memory and multi-provider LLM routing"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.12"
+requires-python = ">=3.12"  # Supports 3.12+ locally, 3.14 in Docker (Chainguard)
 authors = [
     { name = "James Hinton" }
 ]
@@ -109,3 +109,12 @@ directory = "htmlcov"
 
 [tool.coverage.xml]
 output = "coverage.xml"
+
+[tool.bandit]
+# Exclude test and script directories from bandit scans
+exclude_dirs = ["tests", "scripts"]
+# Skip specific checks that generate false positives
+skips = [
+    # B101: assert_used - Asserts are fine in tests
+    "B101",
+]

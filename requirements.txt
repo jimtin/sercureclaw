@@ -7,8 +7,8 @@ google-genai==1.9.0
 anthropic==0.42.0
 cryptography==46.0.4  # AES-256-GCM encryption for Phase 5A
 openai==1.58.1
-pydantic==2.10.3
-pydantic-settings==2.7.0
+pydantic==2.12.5  # Updated for Python 3.14 support (pydantic-core wheels)
+pydantic-settings==2.8.1  # Compatible with pydantic 2.12
 structlog==24.4.0
 httpx==0.28.1
 cachetools==5.5.0  # TTL cache for profile system (Phase 5C)

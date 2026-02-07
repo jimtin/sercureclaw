@@ -1,6 +1,6 @@
 """Tests for Qdrant memory storage."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -9,15 +9,29 @@ class TestQdrantMemory:
     """Tests for QdrantMemory class."""
 
     @pytest.fixture
-    def memory_client(self, mock_qdrant_client, mock_embeddings_client, monkeypatch):
+    def mock_embeddings(self):
+        """Create a mock embeddings client that returns consistent vectors."""
+        embeddings = AsyncMock()
+        # Return a 768-dimension vector for any embed call
+        embeddings.embed_text = AsyncMock(return_value=[0.1] * 768)
+        embeddings.embed_query = AsyncMock(return_value=[0.1] * 768)
+        embeddings.embed_batch = AsyncMock(return_value=[[0.1] * 768])
+        return embeddings
+
+    @pytest.fixture
+    def memory_client(self, mock_qdrant_client, mock_embeddings, monkeypatch):
         """Create QdrantMemory with mocked clients."""
         monkeypatch.setenv("DISCORD_TOKEN", "test")
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
         with (
-            patch("zetherion_ai.memory.qdrant.AsyncQdrantClient", return_value=mock_qdrant_client),
             patch(
-                "zetherion_ai.memory.embeddings.genai.Client", return_value=mock_embeddings_client
+                "zetherion_ai.memory.qdrant.AsyncQdrantClient",
+                return_value=mock_qdrant_client,
+            ),
+            patch(
+                "zetherion_ai.memory.qdrant.get_embeddings_client",
+                return_value=mock_embeddings,
             ),
         ):
             from zetherion_ai.memory.qdrant import QdrantMemory

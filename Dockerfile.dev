@@ -1,16 +1,18 @@
-FROM python:3.12-slim
+# Development Dockerfile using Chainguard
+# Includes dev tools, hot reload support, and full shell access
+#
+# Security: Chainguard images have zero known CVEs vs 19+ in Debian-based images
+
+FROM cgr.dev/chainguard/python:latest-dev
 
 WORKDIR /app
-
-# Install system dependencies including watchfiles requirements
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files
 COPY requirements.txt requirements-dev.txt ./
 
 # Install all dependencies including dev and create data directory
+# PYO3_USE_ABI3_FORWARD_COMPATIBILITY allows pydantic-core to build on Python 3.14
+ENV PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
 RUN pip install --no-cache-dir -r requirements-dev.txt && \
     mkdir -p /app/data
 

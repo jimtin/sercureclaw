@@ -77,14 +77,17 @@ repos:
       - id: bandit
         args: ['-c', 'pyproject.toml']
         additional_dependencies: ['bandit[toml]']
-        exclude: ^tests/
+        # Exclude tests and scripts (CLI utilities that legitimately use subprocess)
+        exclude: ^(tests|scripts)/
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.0
     hooks:
       - id: hadolint-docker
-        args: [--ignore, DL3008, --ignore, DL3009]  # Ignore apt-get pin warnings
+        # DL3007: Using latest tag - required for Chainguard free tier (no version tags)
+        # DL3008/DL3009: apt-get pin warnings - not applicable to Chainguard/Wolfi
+        args: [--ignore, DL3007, --ignore, DL3008, --ignore, DL3009]
 
 # Configuration
 default_install_hook_types: [pre-commit, pre-push]
